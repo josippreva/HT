@@ -12,8 +12,8 @@ from app.models import (
 )
 from app.models import Region
 from app.schemas.number_range import NumberRangeCreate, NumberRangeUpdate
-
-router = APIRouter(prefix="/number-ranges", tags=["Number Ranges"])
+from app.api.deps import get_current_user
+router = APIRouter(prefix="/number-ranges", tags=["Number Ranges"],dependencies=[Depends(get_current_user)])
 
 
 def calculate_range_size(range_start: str, range_end: str) -> int:

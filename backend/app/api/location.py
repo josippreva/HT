@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models import Location, City, PostalCode
 from app.schemas.location import LocationCreate, LocationUpdate
-
-router = APIRouter(prefix="/locations", tags=["Locations"])
+from app.api.deps import get_current_user
+router = APIRouter(prefix="/locations", tags=["Locations"],dependencies=[Depends(get_current_user)])
 
 
 def validate_city_and_postal_code(db: Session, city_id: int, postal_code_id: int):

@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models import Device, Location, City, Region, Entity
 from app.schemas.device import DeviceCreate, DeviceUpdate
-
-router = APIRouter(prefix="/devices", tags=["Devices"])
+from app.api.deps import get_current_user
+router = APIRouter(prefix="/devices", tags=["Devices"],dependencies=[Depends(get_current_user)])
 
 
 @router.get("")

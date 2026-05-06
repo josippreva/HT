@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models import RakNumberBlock, AreaCode, Region
 from app.schemas.rak_number_block import RakNumberBlockCreate
-
-router = APIRouter(prefix="/rak-number-blocks", tags=["RAK Number Blocks"])
+from app.api.deps import get_current_user
+router = APIRouter(prefix="/rak-number-blocks", tags=["RAK Number Blocks"],dependencies=[Depends(get_current_user)])
 
 
 def calculate_block_size(block_start: str, block_end: str) -> int:

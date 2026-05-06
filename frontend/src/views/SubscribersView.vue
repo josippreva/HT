@@ -10,28 +10,18 @@
 
       <form class="form-grid" @submit.prevent="saveSubscriber">
 
-        <!-- Tip -->
         <div class="field full">
           <label>Tip pretplatnika</label>
           <div class="type-toggle">
-            <button
-              type="button"
-              :class="['toggle-btn', form.subscriber_type === 'physical_person' ? 'active' : '']"
-              @click="form.subscriber_type = 'physical_person'"
-            >
+            <button type="button" :class="['toggle-btn', form.subscriber_type === 'physical_person' ? 'active' : '']" @click="form.subscriber_type = 'physical_person'">
               👤 Fizička osoba
             </button>
-            <button
-              type="button"
-              :class="['toggle-btn', form.subscriber_type === 'legal_entity' ? 'active' : '']"
-              @click="form.subscriber_type = 'legal_entity'"
-            >
+            <button type="button" :class="['toggle-btn', form.subscriber_type === 'legal_entity' ? 'active' : '']" @click="form.subscriber_type = 'legal_entity'">
               🏢 Pravna osoba
             </button>
           </div>
         </div>
 
-        <!-- Ime/Prezime ili Naziv firme -->
         <template v-if="form.subscriber_type === 'physical_person'">
           <div class="field">
             <label>Ime</label>
@@ -44,13 +34,12 @@
         </template>
 
         <template v-else>
-          <div class="field full">
+          <div class="field half">
             <label>Naziv firme</label>
             <input v-model="form.company_name" type="text" placeholder="Naziv pravne osobe" />
           </div>
         </template>
 
-        <!-- JMBG + Kontakt -->
         <div class="field">
           <label>JMBG</label>
           <input v-model="form.jmbg" type="text" maxlength="13" placeholder="13 znamenki" />
@@ -61,21 +50,18 @@
           <input v-model="form.contact_phone" type="text" placeholder="+387 xx xxx xxx" />
         </div>
 
-        <div class="field full">
+        <div class="field half">
           <label>Email</label>
           <input v-model="form.email" type="email" placeholder="email@primjer.ba" />
         </div>
 
-        <!-- Adresa sekcija -->
-        <div class="field full section-label">Adresa</div>
+        <div class="section-label">Adresa</div>
 
         <div class="field">
           <label>Entitet</label>
           <select v-model="form.entity_id" @change="onEntityChange">
             <option value="">Odaberi entitet</option>
-            <option v-for="entity in entities" :key="entity.id" :value="entity.id">
-              {{ entity.name }}
-            </option>
+            <option v-for="entity in entities" :key="entity.id" :value="entity.id">{{ entity.name }}</option>
           </select>
         </div>
 
@@ -83,19 +69,15 @@
           <label>Županija</label>
           <select v-model="form.region_id" @change="onRegionChange" :disabled="!form.entity_id">
             <option value="">Odaberi županiju</option>
-            <option v-for="region in regions" :key="region.id" :value="region.id">
-              {{ region.name }}
-            </option>
+            <option v-for="region in regions" :key="region.id" :value="region.id">{{ region.name }}</option>
           </select>
         </div>
 
         <div class="field">
-          <label>Grad/općina</label>
+          <label>Grad / općina</label>
           <select v-model="form.city_id" @change="onCityChange" :disabled="!form.region_id">
             <option value="">Odaberi grad/općinu</option>
-            <option v-for="city in cities" :key="city.id" :value="city.id">
-              {{ city.name }}
-            </option>
+            <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
           </select>
         </div>
 
@@ -103,28 +85,25 @@
           <label>Poštanski broj</label>
           <select v-model="form.postal_code_id" :disabled="!form.city_id">
             <option value="">Odaberi poštanski broj</option>
-            <option v-for="postal in postalCodes" :key="postal.id" :value="postal.id">
-              {{ postal.postal_code }} — {{ postal.postal_name }}
-            </option>
+            <option v-for="postal in postalCodes" :key="postal.id" :value="postal.id">{{ postal.postal_code }} — {{ postal.postal_name }}</option>
           </select>
         </div>
 
-        <div class="field full">
+        <div class="field half">
           <label>Ulica i broj</label>
           <input v-model="form.address" type="text" placeholder="npr. Ulica bb" />
         </div>
 
-        <!-- Napomena -->
         <div class="field full">
           <label>Napomena <span class="optional">(opcionalno)</span></label>
           <textarea v-model="form.note" placeholder="Dodatne napomene..."></textarea>
         </div>
 
         <div class="actions full">
-          <button type="submit">
+          <button type="submit" class="btn-primary">
             {{ editingId ? "Spremi izmjene" : "Spremi pretplatnika" }}
           </button>
-          <button v-if="editingId" type="button" class="secondary" @click="resetForm">
+          <button v-if="editingId" type="button" class="btn-secondary" @click="resetForm">
             Odustani
           </button>
         </div>
@@ -134,18 +113,18 @@
       <p v-if="success" class="success">{{ success }}</p>
     </section>
 
+    <!-- Filteri -->
     <section class="panel">
-      <div class="filters">
-        <div class="field search">
+      <div class="filters-top">
+        <div class="field">
           <label>Pretraga</label>
           <input
-            v-model="search"
+            v-model="filters.search"
             type="text"
-            placeholder="Ime, firma, JMBG..."
+            placeholder="Ime, prezime, firma, JMBG, dodijeljeni broj..."
             @input="loadSubscribers"
           />
         </div>
-
         <div class="field">
           <label>Tip</label>
           <select v-model="typeFilter">
@@ -155,12 +134,44 @@
           </select>
         </div>
       </div>
+
+      <div class="filters-bottom">
+        <div class="field">
+          <label>Entitet</label>
+          <select v-model="filters.entity_id" @change="onFilterEntityChange">
+            <option value="">Svi entiteti</option>
+            <option v-for="entity in entities" :key="entity.id" :value="entity.id">{{ entity.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Regija</label>
+          <select v-model="filters.region_id" @change="onFilterRegionChange" :disabled="!filters.entity_id">
+            <option value="">Sve regije</option>
+            <option v-for="region in regions" :key="region.id" :value="region.id">{{ region.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Grad</label>
+          <select v-model="filters.city_id" @change="onFilterCityChange" :disabled="!filters.region_id">
+            <option value="">Svi gradovi</option>
+            <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Lokacija</label>
+          <select v-model="filters.location_id" @change="onFilterLocationChange" :disabled="!filters.city_id">
+            <option value="">Sve lokacije</option>
+            <option v-for="location in locations" :key="location.id" :value="location.id">{{ location.name }}</option>
+          </select>
+        </div>
+      </div>
     </section>
 
+    <!-- Tabela -->
     <section class="panel">
       <div class="panel-header">
         <h2>Popis pretplatnika</h2>
-        <span class="muted">Ukupno: {{ filteredSubscribers.length }}</span>
+        <span class="count-badge">Ukupno: {{ filteredSubscribers.length }}</span>
       </div>
 
       <div v-if="loading" class="loading">Učitavanje...</div>
@@ -171,42 +182,42 @@
             <th>Naziv</th>
             <th>Tip</th>
             <th>JMBG</th>
+            <th>Dodijeljeni broj</th>
             <th>Kontakt</th>
             <th>Adresa</th>
             <th>Akcije</th>
           </tr>
         </thead>
-
         <tbody>
           <tr v-for="subscriber in filteredSubscribers" :key="subscriber.id">
             <td>
               <strong>{{ displayName(subscriber) }}</strong>
-              <div class="muted">ID: {{ subscriber.id }}</div>
+              <div class="sub-id">ID: {{ subscriber.id }}</div>
             </td>
-
             <td>
               <span class="badge" :class="subscriber.subscriber_type === 'legal_entity' ? 'badge-blue' : 'badge-red'">
                 {{ subscriber.subscriber_type === "legal_entity" ? "Pravna osoba" : "Fizička osoba" }}
               </span>
             </td>
-
-            <td>{{ subscriber.jmbg || "-" }}</td>
-
+            <td>{{ subscriber.jmbg || "—" }}</td>
             <td>
-              <div>{{ subscriber.contact_phone || "-" }}</div>
+              <span v-if="subscriber.assigned_phone_numbers.length">
+                {{ subscriber.assigned_phone_numbers.map(num => formatPhoneNumber(num)).join(", ") }}
+              </span>
+              <span v-else>—</span>
+            </td>
+            <td>
+              <div>{{ subscriber.contact_phone || "—" }}</div>
               <div class="muted">{{ subscriber.email || "" }}</div>
             </td>
-
-            <td>{{ subscriber.address || "-" }}</td>
-
+            <td>{{ subscriber.address || "—" }}</td>
             <td class="table-actions">
-              <button class="small-btn" @click="startEdit(subscriber)">Edit</button>
-              <button class="small-btn danger" @click="deleteSubscriber(subscriber)">Delete</button>
+              <button class="small-btn" @click="startEdit(subscriber)">Uredi</button>
+              <button class="small-btn danger" @click="deleteSubscriber(subscriber)">Obriši</button>
             </td>
           </tr>
-
           <tr v-if="filteredSubscribers.length === 0">
-            <td colspan="6" class="empty">Nema pretplatnika za prikaz.</td>
+            <td colspan="7" class="empty">Nema pretplatnika za prikaz.</td>
           </tr>
         </tbody>
       </table>
@@ -223,13 +234,21 @@ const entities = ref([]);
 const regions = ref([]);
 const cities = ref([]);
 const postalCodes = ref([]);
+const locations = ref([]);
 
-const search = ref("");
 const typeFilter = ref("");
 const loading = ref(false);
 const error = ref("");
 const success = ref("");
 const editingId = ref(null);
+
+const filters = reactive({
+  search: "",
+  entity_id: "",
+  region_id: "",
+  city_id: "",
+  location_id: "",
+});
 
 const form = reactive({
   subscriber_type: "physical_person",
@@ -249,15 +268,11 @@ const form = reactive({
 
 const filteredSubscribers = computed(() => {
   if (!typeFilter.value) return subscribers.value;
-  return subscribers.value.filter(
-    (subscriber) => subscriber.subscriber_type === typeFilter.value
-  );
+  return subscribers.value.filter(s => s.subscriber_type === typeFilter.value);
 });
 
 function displayName(subscriber) {
-  if (subscriber.subscriber_type === "legal_entity") {
-    return subscriber.company_name || "-";
-  }
+  if (subscriber.subscriber_type === "legal_entity") return subscriber.company_name || "-";
   return `${subscriber.first_name || ""} ${subscriber.last_name || ""}`.trim() || "-";
 }
 
@@ -315,12 +330,66 @@ async function onCityChange() {
 async function loadSubscribers() {
   loading.value = true;
   try {
-    const query = search.value ? `?search=${encodeURIComponent(search.value)}` : "";
-    const response = await api.get(`/subscribers${query}`);
+    const params = new URLSearchParams();
+    if (filters.search) params.append("search", filters.search);
+    if (filters.entity_id) params.append("entity_id", filters.entity_id);
+    if (filters.region_id) params.append("region_id", filters.region_id);
+    if (filters.city_id) params.append("city_id", filters.city_id);
+    if (filters.location_id) params.append("location_id", filters.location_id);
+    const response = await api.get(`/subscribers?${params.toString()}`);
     subscribers.value = response.data;
   } finally {
     loading.value = false;
   }
+}
+
+async function loadRegions() {
+  const response = await api.get("/regions");
+  regions.value = response.data;
+}
+
+async function onFilterEntityChange() {
+  filters.region_id = "";
+  filters.city_id = "";
+  filters.location_id = "";
+  regions.value = [];
+  cities.value = [];
+  locations.value = [];
+  if (filters.entity_id) {
+    const response = await api.get(`/regions?entity_id=${filters.entity_id}`);
+    regions.value = response.data;
+  } else {
+    await loadRegions();
+  }
+  await loadSubscribers();
+}
+
+async function onFilterRegionChange() {
+  filters.city_id = "";
+  filters.location_id = "";
+  cities.value = [];
+  locations.value = [];
+  if (filters.region_id) {
+    const response = await api.get(`/cities?region_id=${filters.region_id}`);
+    cities.value = response.data;
+  }
+  await loadSubscribers();
+}
+
+async function onFilterCityChange() {
+  filters.location_id = "";
+  locations.value = [];
+  if (filters.city_id) {
+    const response = await api.get("/locations");
+    locations.value = response.data.filter(
+      (location) => Number(location.city_id) === Number(filters.city_id)
+    );
+  }
+  await loadSubscribers();
+}
+
+async function onFilterLocationChange() {
+  await loadSubscribers();
 }
 
 async function saveSubscriber() {
@@ -342,9 +411,16 @@ async function saveSubscriber() {
   }
 }
 
+function formatPhoneNumber(value) {
+  if (!value) return "";
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length === 8) return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  if (digits.length === 9) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  return value;
+}
+
 async function startEdit(subscriber) {
   editingId.value = subscriber.id;
-
   form.subscriber_type = subscriber.subscriber_type;
   form.first_name = subscriber.first_name || "";
   form.last_name = subscriber.last_name || "";
@@ -354,12 +430,10 @@ async function startEdit(subscriber) {
   form.contact_phone = subscriber.contact_phone || "";
   form.email = subscriber.email || "";
   form.note = subscriber.note || "";
-
   form.entity_id = "";
   form.region_id = "";
   form.city_id = subscriber.city_id || "";
   form.postal_code_id = subscriber.postal_code_id || "";
-
   regions.value = [];
   cities.value = [];
   postalCodes.value = [];
@@ -367,11 +441,9 @@ async function startEdit(subscriber) {
   if (subscriber.city_id) {
     const citiesResponse = await api.get("/cities");
     const city = citiesResponse.data.find((item) => Number(item.id) === Number(subscriber.city_id));
-
     if (city) {
       const regionsResponse = await api.get("/regions");
       const region = regionsResponse.data.find((item) => Number(item.id) === Number(city.region_id));
-
       if (region) {
         form.entity_id = region.entity_id;
         await onEntityChange();
@@ -423,71 +495,70 @@ async function deleteSubscriber(subscriber) {
 
 onMounted(async () => {
   await loadEntities();
+  await loadRegions();
   await loadSubscribers();
 });
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 24px; }
-.page-header h1 { margin: 0; font-size: 30px; color: #111827; }
-.page-header p { margin-top: 6px; color: #6b7280; }
+.page-header { margin-bottom: 20px; }
+.page-header h1 { margin: 0; font-size: 28px; color: #111827; }
+.page-header p { margin-top: 5px; color: #6b7280; font-size: 14px; }
 
 .panel {
   background: rgba(255,255,255,0.9);
   border: 1px solid #e5e7eb;
   border-radius: 22px;
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
   box-shadow: 0 18px 40px rgba(15,23,42,0.06);
 }
-.panel h2 { margin-top: 0; margin-bottom: 18px; color: #111827; }
+.panel h2 { margin-top: 0; margin-bottom: 16px; font-size: 16px; color: #111827; }
 
-.form-grid,
-.filters {
+.form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
-.filters { grid-template-columns: 2fr 1fr; }
-
 .field { display: flex; flex-direction: column; }
-.field.full, .actions.full { grid-column: span 2; }
+.field.full { grid-column: span 3; }
+.field.half { grid-column: span 2; }
 
 label {
-  font-size: 14px;
-  color: #374151;
-  margin-bottom: 6px;
-  font-weight: 700;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-.optional { font-weight: 400; color: #9ca3af; font-size: 13px; }
+.optional { font-weight: 400; color: #9ca3af; font-size: 12px; text-transform: none; letter-spacing: 0; }
 
 .section-label {
-  font-size: 12px;
+  grid-column: span 3;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: #9ca3af;
   border-bottom: 1px solid #f3f4f6;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   margin-top: 4px;
   display: flex;
   align-items: center;
 }
 
-.type-toggle {
-  display: flex;
-  gap: 10px;
-}
+.type-toggle { display: flex; gap: 8px; }
 .toggle-btn {
   flex: 1;
   background: #f9fafb;
   color: #374151;
   border: 1.5px solid #e5e7eb;
-  padding: 11px 16px;
+  padding: 9px 14px;
   border-radius: 12px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.15s;
 }
 .toggle-btn.active {
@@ -498,79 +569,144 @@ label {
 
 input, select, textarea {
   border: 1px solid #d1d5db;
-  border-radius: 12px;
-  padding: 12px 13px;
-  font-size: 14px;
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 13px;
   background: white;
   color: #111827;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-textarea { min-height: 80px; }
+textarea { min-height: 68px; }
 select:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.12);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
 }
 
-.actions.full { display: flex; gap: 10px; }
-
-button {
+.actions.full { grid-column: span 3; display: flex; gap: 8px; padding-top: 2px; }
+.btn-primary {
   background: linear-gradient(135deg, #dc2626, #2563eb);
   color: white;
   border: none;
-  padding: 13px 20px;
-  border-radius: 12px;
+  padding: 10px 18px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 13px;
 }
-button.secondary { background: #6b7280; }
-.small-btn { padding: 8px 11px; border-radius: 9px; font-size: 12px; }
-.small-btn.danger { background: #dc2626; }
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
 
-.error { color: #dc2626; margin-top: 12px; }
-.success { color: #16a34a; margin-top: 12px; }
+.error { color: #dc2626; margin-top: 10px; font-size: 13px; }
+.success { color: #16a34a; margin-top: 10px; font-size: 13px; }
+
+.filters-top {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+.filters-bottom {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  align-items: end;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+.filters-top label,
+.filters-bottom label { font-size: 11px; }
+.filters-top input,
+.filters-top select,
+.filters-bottom select { padding: 8px 10px; font-size: 12px; }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 .panel-header h2 { margin: 0; }
-.muted { color: #6b7280; font-size: 13px; }
-.loading, .empty { text-align: center; color: #6b7280; padding: 28px; }
+.count-badge {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+}
+
+.muted { color: #6b7280; font-size: 12px; }
+.sub-id { font-size: 11px; color: #9ca3af; margin-top: 2px; font-weight: 400; }
+.loading, .empty { text-align: center; color: #6b7280; padding: 24px; font-size: 14px; }
 
 table { width: 100%; border-collapse: collapse; }
 th {
   text-align: left;
   background: #f9fafb;
-  color: #6b7280;
-  font-size: 13px;
-  padding: 13px;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
 }
 td {
-  padding: 13px;
+  padding: 10px 12px;
   border-bottom: 1px solid #eef2f7;
   color: #374151;
-  font-size: 14px;
-  vertical-align: top;
+  font-size: 13px;
+  vertical-align: middle;
 }
-.table-actions { display: flex; gap: 8px; }
+tr:last-child td { border-bottom: none; }
+.table-actions { display: flex; gap: 6px; }
 
 .badge {
   display: inline-flex;
-  padding: 5px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
 }
-.badge-red { background: rgba(220,38,38,0.12); color: #dc2626; }
-.badge-blue { background: rgba(37,99,235,0.12); color: #2563eb; }
+.badge-red { background: rgba(220,38,38,0.1); color: #dc2626; }
+.badge-blue { background: rgba(37,99,235,0.1); color: #2563eb; }
 
+.small-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.small-btn:hover { background: #e5e7eb; }
+.small-btn.danger { background: rgba(220,38,38,0.08); color: #dc2626; border-color: rgba(220,38,38,0.2); }
+.small-btn.danger:hover { background: rgba(220,38,38,0.15); }
+
+@media (max-width: 900px) {
+  .filters-top { grid-template-columns: 1fr; }
+  .filters-bottom { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 760px) {
-  .form-grid, .filters { grid-template-columns: 1fr; }
-  .field.full, .actions.full { grid-column: span 1; }
+  .form-grid { grid-template-columns: 1fr; }
+  .field.full, .field.half, .actions.full { grid-column: span 1; }
+  .section-label { grid-column: span 1; }
   .type-toggle { flex-direction: column; }
+  .filters-bottom { grid-template-columns: 1fr; }
 }
 </style>

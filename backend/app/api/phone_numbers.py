@@ -6,14 +6,14 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models import PhoneNumber, NumberRange, Location, City, Region, Entity, Device, Subscriber
-
+from app.api.deps import get_current_user
 from app.schemas.phone_number_actions import (
     AssignPhoneNumberRequest,
     ReleasePhoneNumberRequest,
     QuarantinePhoneNumberRequest,
 )
 
-router = APIRouter(prefix="/phone-numbers", tags=["Phone Numbers"])
+router = APIRouter(prefix="/phone-numbers", tags=["Phone Numbers"],dependencies=[Depends(get_current_user)])
 
 
 @router.post("/generate/{number_range_id}", status_code=status.HTTP_201_CREATED)
@@ -100,14 +100,18 @@ def list_phone_numbers(
 
     if search:
         value = f"%{search}%"
+
+        full_name = Subscriber.first_name + " " + Subscriber.last_name
+
         query = query.filter(
             (PhoneNumber.number_value.ilike(value)) |
             (Subscriber.first_name.ilike(value)) |
             (Subscriber.last_name.ilike(value)) |
+            (full_name.ilike(value)) | 
             (Subscriber.company_name.ilike(value)) |
             (Subscriber.oib.ilike(value)) |
-            (Subscriber.jmbg.ilike(value)) |
-            (Subscriber.external_id.ilike(value))
+            (Subscriber.jmbg.ilike(value)) 
+           #(Subscriber.external_id.ilike(value))
         )
 
     total = query.count()
@@ -182,7 +186,7 @@ def list_phone_numbers(
                 ),
                 "subscriber_oib": subscriber.oib if subscriber else None,
                 "subscriber_jmbg": subscriber.jmbg if subscriber else None,
-                "subscriber_external_id": subscriber.external_id if subscriber else None,
+                #"subscriber_external_id": subscriber.external_id if subscriber else None,
             }
             for phone, number_range, location, city, region, entity, subscriber in rows
         ],
@@ -228,7 +232,7 @@ def get_phone_number(phone_number_id: int, db: Session = Depends(get_db)):
         ),
         "subscriber_oib": subscriber.oib if subscriber else None,
         "subscriber_jmbg": subscriber.jmbg if subscriber else None,
-        "subscriber_external_id": subscriber.external_id if subscriber else None,
+        #"subscriber_external_id": subscriber.external_id if subscriber else None,
     }
 
 

@@ -19,11 +19,23 @@ export const useAuthStore = defineStore("auth", {
       localStorage.setItem("token", this.token);
 
       await this.fetchMe();
+
+      router.push("/dashboard");
     },
 
     async fetchMe() {
       const response = await api.get("/auth/me");
       this.user = response.data;
+    },
+
+    async initAuth() {
+      if (this.token && !this.user) {
+        try {
+          await this.fetchMe();
+        } catch (err) {
+          this.logout();
+        }
+      }
     },
 
     logout() {

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
+from app.api.deps import get_current_user
 from app.db.database import get_db
 from app.models import (
     Location,
@@ -12,7 +12,7 @@ from app.models import (
     PhoneNumber,
 )
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["Dashboard"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/stats")

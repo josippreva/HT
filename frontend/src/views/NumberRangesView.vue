@@ -1,10 +1,8 @@
 <template>
   <div>
     <div class="page-header">
-      <div>
-        <h1>Rasponi</h1>
-        <p>Interna dodjela RAK blokova na lokacije i generiranje fiksnih brojeva.</p>
-      </div>
+      <h1>Rasponi</h1>
+      <p>Interna dodjela RAK blokova na lokacije i generiranje fiksnih brojeva.</p>
     </div>
 
     <section class="panel">
@@ -12,7 +10,6 @@
 
       <form class="form-grid" @submit.prevent="createRange">
 
-        <!-- RAK blok -->
         <div class="field full">
           <label>RAK blok</label>
           <select v-model="form.rak_block_id" @change="onRakBlockChange" required>
@@ -23,23 +20,19 @@
           </select>
         </div>
 
-        <!-- Region info (resolved automatically, read-only) -->
         <div v-if="blockResolving" class="field full resolve-hint">
           <div class="spinner-inline"></div>
           Određivanje regije po area code-u...
         </div>
-
         <div v-else-if="resolvedRegionName" class="field full resolve-hint success-hint">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           Regija prepoznata: <strong>{{ resolvedRegionName }}</strong>
         </div>
-
         <div v-else-if="form.rak_block_id && !blockResolving && !resolvedRegionName" class="field full resolve-hint warn-hint">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Area code nije pronađen — odaberi grad ručno.
         </div>
 
-        <!-- Grad (filtered by resolved region, or all if not resolved) -->
         <div class="field">
           <label>Grad/općina</label>
           <select
@@ -57,15 +50,9 @@
           </select>
         </div>
 
-        <!-- Lokacija (filtered by city) -->
         <div class="field">
           <label>Lokacija</label>
-          <select
-            v-model="form.location_id"
-            @change="onLocationChange"
-            :disabled="!form.city_id"
-            required
-          >
+          <select v-model="form.location_id" @change="onLocationChange" :disabled="!form.city_id" required>
             <option value="">
               {{ !form.city_id ? 'Odaberi grad prvo' : 'Odaberi lokaciju' }}
             </option>
@@ -78,7 +65,6 @@
           </span>
         </div>
 
-        <!-- Uređaj (filtered by location) — OBAVEZNO -->
         <div class="field">
           <label>Uređaj</label>
           <select v-model="form.device_id" :disabled="!form.location_id" required>
@@ -94,13 +80,11 @@
           </span>
         </div>
 
-        <!-- Naziv -->
         <div class="field">
           <label>Naziv raspona <span class="optional">(opcionalno)</span></label>
           <input v-model="form.name" type="text" placeholder="npr. Mostar blok 1" />
         </div>
 
-        <!-- Od / Do -->
         <div class="field">
           <label>Od broja</label>
           <input v-model="form.range_start" type="text" placeholder="npr. 36500000" required />
@@ -112,7 +96,7 @@
         </div>
 
         <div class="actions full">
-          <button type="submit">Spremi raspon</button>
+          <button type="submit" class="btn-primary">Spremi raspon</button>
         </div>
       </form>
 
@@ -121,9 +105,12 @@
     </section>
 
     <section class="panel">
-      <h2>Popis raspona</h2>
+      <div class="panel-header">
+        <h2>Popis raspona</h2>
+        <span class="count-badge">Ukupno: {{ ranges.length }}</span>
+      </div>
 
-      <div v-if="loading">Učitavanje...</div>
+      <div v-if="loading" class="loading">Učitavanje...</div>
 
       <table v-else>
         <thead>
@@ -140,19 +127,19 @@
         </thead>
         <tbody>
           <tr v-for="range in ranges" :key="range.id">
-            <td><strong>{{ range.name || "-" }}</strong></td>
+            <td><strong>{{ range.name || "—" }}</strong></td>
             <td>{{ range.range_start }} – {{ range.range_end }}</td>
             <td>{{ range.range_size }}</td>
             <td>{{ range.rak_block_start }} – {{ range.rak_block_end }}</td>
             <td>{{ range.location_name }} — {{ range.city_name }}</td>
-            <td>{{ range.device_name || "-" }}</td>
+            <td>{{ range.device_name || "—" }}</td>
             <td>
               <span class="badge" :class="range.generated ? 'badge-green' : 'badge-gray'">
                 {{ range.generated ? "Generirano" : "Nije generirano" }}
               </span>
             </td>
             <td class="table-actions">
-              <button v-if="!range.generated" class="small-btn" @click="generateNumbers(range)">
+              <button v-if="!range.generated" class="small-btn generate" @click="generateNumbers(range)">
                 Generiraj
               </button>
             </td>
@@ -220,7 +207,6 @@ async function loadRanges() {
 }
 
 async function onRakBlockChange() {
-  // Reset cascade
   form.city_id = "";
   form.location_id = "";
   form.device_id = "";
@@ -240,10 +226,7 @@ async function onRakBlockChange() {
   try {
     const response = await api.get("/area-codes");
     const areaCodes = response.data;
-
-    const match = areaCodes.find(
-      (ac) => String(ac.code) === String(areaCode)
-    );
+    const match = areaCodes.find((ac) => String(ac.code) === String(areaCode));
 
     if (!match) {
       const citiesRes = await api.get("/cities");
@@ -273,9 +256,7 @@ async function onCityChange() {
   form.device_id = "";
   locationsForCity.value = [];
   devicesForLocation.value = [];
-
   if (!form.city_id) return;
-
   locationsForCity.value = allLocations.value.filter(
     (loc) => Number(loc.city_id) === Number(form.city_id)
   );
@@ -284,9 +265,7 @@ async function onCityChange() {
 async function onLocationChange() {
   form.device_id = "";
   devicesForLocation.value = [];
-
   if (!form.location_id) return;
-
   const response = await api.get(`/devices?location_id=${form.location_id}`);
   devicesForLocation.value = response.data;
 }
@@ -294,7 +273,6 @@ async function onLocationChange() {
 async function createRange() {
   error.value = "";
   success.value = "";
-
   try {
     await api.post("/number-ranges", {
       rak_block_id: Number(form.rak_block_id),
@@ -304,8 +282,6 @@ async function createRange() {
       range_start: form.range_start,
       range_end: form.range_end,
     });
-
-    // Reset form
     Object.assign(form, {
       rak_block_id: "", city_id: "", location_id: "",
       device_id: "", name: "", range_start: "", range_end: "",
@@ -315,7 +291,6 @@ async function createRange() {
     citiesForRegion.value = [];
     locationsForCity.value = [];
     devicesForLocation.value = [];
-
     success.value = "Raspon je uspješno spremljen.";
     await loadRanges();
   } catch (err) {
@@ -325,10 +300,8 @@ async function createRange() {
 
 async function generateNumbers(range) {
   if (!confirm(`Generirati brojeve za raspon ${range.range_start} – ${range.range_end}?`)) return;
-
   error.value = "";
   success.value = "";
-
   try {
     const response = await api.post(`/phone-numbers/generate/${range.id}`);
     success.value = response.data.message;
@@ -345,71 +318,81 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 24px; }
-.page-header h1 { margin: 0; font-size: 30px; color: #111827; }
-.page-header p { margin-top: 6px; color: #6b7280; }
+.page-header { margin-bottom: 20px; }
+.page-header h1 { margin: 0; font-size: 28px; color: #111827; }
+.page-header p { margin-top: 5px; color: #6b7280; font-size: 14px; }
 
 .panel {
   background: rgba(255,255,255,0.9);
   border: 1px solid #e5e7eb;
   border-radius: 22px;
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
   box-shadow: 0 18px 40px rgba(15,23,42,0.06);
 }
-.panel h2 { margin-top: 0; margin-bottom: 18px; font-size: 20px; color: #111827; }
+.panel h2 { margin-top: 0; margin-bottom: 16px; font-size: 16px; color: #111827; }
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.panel-header h2 { margin: 0; }
+.count-badge {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+}
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
-
 .field { display: flex; flex-direction: column; }
-.field.full { grid-column: span 2; }
-.actions.full { grid-column: span 2; }
+.field.full { grid-column: span 3; }
+.actions.full { grid-column: span 3; display: flex; gap: 8px; padding-top: 2px; }
 
 label {
-  font-size: 14px;
-  color: #374151;
-  margin-bottom: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 5px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-.optional { font-weight: 400; color: #9ca3af; font-size: 13px; }
+.optional { font-weight: 400; color: #9ca3af; font-size: 12px; text-transform: none; letter-spacing: 0; }
 
 input, select {
   border: 1px solid #d1d5db;
-  border-radius: 12px;
-  padding: 12px 13px;
-  font-size: 14px;
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 13px;
   background: white;
   color: #111827;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-select:disabled {
-  background: #f9fafb;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
+select:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
 input:focus, select:focus {
   outline: none;
   border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.12);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
 }
 
-.field-hint {
-  font-size: 12px;
-  color: #f59e0b;
-  margin-top: 5px;
-}
+.field-hint { font-size: 11px; color: #f59e0b; margin-top: 4px; }
 
 .resolve-hint {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  margin-bottom: 0;
+  font-size: 12px;
+  padding: 9px 13px;
+  border-radius: 10px;
   border: 1px solid #e5e7eb;
   color: #6b7280;
   background: #f9fafb;
@@ -426,8 +409,8 @@ input:focus, select:focus {
 }
 
 .spinner-inline {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 2px solid #e5e7eb;
   border-top-color: #dc2626;
   border-radius: 50%;
@@ -436,54 +419,76 @@ input:focus, select:focus {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-button {
+.btn-primary {
   background: linear-gradient(135deg, #dc2626, #2563eb);
   color: white;
   border: none;
-  padding: 13px 20px;
-  border-radius: 12px;
+  padding: 10px 18px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: bold;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
 }
 
-.small-btn { padding: 8px 11px; border-radius: 9px; font-size: 12px; }
-
-.error { color: #dc2626; margin-top: 12px; }
-.success { color: #16a34a; margin-top: 12px; }
+.error { color: #dc2626; margin-top: 10px; font-size: 13px; }
+.success { color: #16a34a; margin-top: 10px; font-size: 13px; }
+.loading, .empty { text-align: center; color: #6b7280; padding: 24px; font-size: 14px; }
 
 table { width: 100%; border-collapse: collapse; }
 th {
   text-align: left;
   background: #f9fafb;
-  color: #6b7280;
-  font-size: 13px;
-  padding: 13px;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
 }
 td {
-  padding: 13px;
+  padding: 10px 12px;
   border-bottom: 1px solid #eef2f7;
   color: #374151;
-  font-size: 14px;
+  font-size: 13px;
+  vertical-align: middle;
 }
-
-.table-actions { display: flex; gap: 8px; }
+tr:last-child td { border-bottom: none; }
+.table-actions { display: flex; gap: 6px; }
 
 .badge {
   display: inline-flex;
-  padding: 5px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
 }
-.badge-green { background: rgba(22,163,74,0.12); color: #16a34a; }
-.badge-gray { background: rgba(107,114,128,0.12); color: #6b7280; }
+.badge-green { background: rgba(22,163,74,0.1); color: #16a34a; }
+.badge-gray { background: rgba(107,114,128,0.1); color: #6b7280; }
 
-.empty { text-align: center; color: #6b7280; padding: 28px; }
+.small-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.small-btn:hover { background: #e5e7eb; }
 
+.small-btn.generate {
+  background: rgba(37,99,235,0.1);
+  color: #2563eb;
+  border-color: rgba(37,99,235,0.25);
+}
+.small-btn.generate:hover { background: rgba(37,99,235,0.18); }
+@media (max-width: 900px) {
+  .form-grid { grid-template-columns: 1fr 1fr; }
+  .field.full, .actions.full { grid-column: span 2; }
+}
 @media (max-width: 760px) {
   .form-grid { grid-template-columns: 1fr; }
   .field.full, .actions.full { grid-column: span 1; }

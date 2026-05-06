@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models import Entity, Region, City, PostalCode
-
+from app.api.deps import get_current_user
 from app.schemas.master_data import (
     EntityResponse,
     RegionResponse,
@@ -11,7 +11,7 @@ from app.schemas.master_data import (
     PostalCodeResponse,
 )
 
-router = APIRouter(tags=["Master Data"])
+router = APIRouter(tags=["Master Data"],dependencies=[Depends(get_current_user)])
 
 
 @router.get("/regions", response_model=list[RegionResponse])

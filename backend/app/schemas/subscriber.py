@@ -43,3 +43,11 @@ class SubscriberCreate(SubscriberBase):
 
 class SubscriberUpdate(SubscriberBase):
     pass
+
+
+class SubscriberOut(SubscriberBase):
+    id: int
+    assigned_phone_numbers: list[str] = []
+
+    class Config:
+        from_attributes = True

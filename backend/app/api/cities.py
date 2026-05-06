@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models import City, Region
 from app.schemas.city import CityCreate, CityUpdate
-
-router = APIRouter(prefix="/cities", tags=["Cities"])
+from app.api.deps import get_current_user
+router = APIRouter(prefix="/cities", tags=["Cities"],dependencies=[Depends(get_current_user)])
 
 
 def validate_region(db: Session, region_id: int):

@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models import Region, Entity
 from app.schemas.region import RegionCreate, RegionUpdate
-
-router = APIRouter(prefix="/regions", tags=["Regions"])
+from app.api.deps import get_current_user
+router = APIRouter(prefix="/regions", tags=["Regions"],dependencies=[Depends(get_current_user)])
 
 
 def validate_entity(db: Session, entity_id: int):

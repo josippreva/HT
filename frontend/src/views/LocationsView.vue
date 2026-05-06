@@ -1,10 +1,8 @@
 <template>
   <div>
     <div class="page-header">
-      <div>
-        <h1>Lokacije</h1>
-        <p>Kreiranje lokacija kroz hijerarhiju entitet → regija → grad/općina.</p>
-      </div>
+      <h1>Lokacije</h1>
+      <p>Kreiranje lokacija kroz hijerarhiju entitet → regija → grad/općina.</p>
     </div>
 
     <section class="panel">
@@ -62,12 +60,12 @@
         </div>
 
         <div class="field full">
-          <label>Napomena</label>
+          <label>Napomena <span class="optional">(opcionalno)</span></label>
           <textarea v-model="form.note" placeholder="Opcionalna napomena"></textarea>
         </div>
 
         <div class="actions full">
-          <button type="submit" :disabled="submitting">
+          <button type="submit" class="btn-primary" :disabled="submitting">
             {{ submitting ? "Spremanje..." : "Spremi lokaciju" }}
           </button>
         </div>
@@ -78,9 +76,12 @@
     </section>
 
     <section class="panel">
-      <h2>Popis lokacija</h2>
+      <div class="panel-header">
+        <h2>Popis lokacija</h2>
+        <span class="count-badge">Ukupno: {{ locations.length }}</span>
+      </div>
 
-      <div v-if="loading" class="loading">Učitavanje…</div>
+      <div v-if="loading" class="loading">Učitavanje...</div>
 
       <table v-else>
         <thead>
@@ -94,7 +95,6 @@
             <th>Akcije</th>
           </tr>
         </thead>
-
         <tbody>
           <tr v-for="location in locations" :key="location.id">
             <td><strong>{{ location.name }}</strong></td>
@@ -104,11 +104,10 @@
             <td>{{ location.address || "—" }}</td>
             <td>{{ location.note || "—" }}</td>
             <td class="table-actions">
-              <button class="small-btn" @click="startEdit(location)">Edit</button>
-              <button class="small-btn danger" @click="deleteLocation(location.id)">Delete</button>
+              <button class="small-btn" @click="startEdit(location)">Uredi</button>
+              <button class="small-btn danger" @click="deleteLocation(location.id)">Obriši</button>
             </td>
           </tr>
-
           <tr v-if="locations.length === 0">
             <td colspan="7" class="empty">Nema unesenih lokacija.</td>
           </tr>
@@ -173,15 +172,15 @@
           </div>
 
           <div class="field full">
-            <label>Napomena</label>
+            <label>Napomena <span class="optional">(opcionalno)</span></label>
             <textarea v-model="editForm.note"></textarea>
           </div>
 
-          <div class="modal-actions full">
-            <button type="button" class="btn-secondary" @click="closeEdit">Odustani</button>
-            <button type="submit" :disabled="editSubmitting">
+          <div class="actions full">
+            <button type="submit" class="btn-primary" :disabled="editSubmitting">
               {{ editSubmitting ? "Spremanje..." : "Spremi izmjene" }}
             </button>
+            <button type="button" class="btn-secondary" @click="closeEdit">Odustani</button>
           </div>
         </form>
 
@@ -283,10 +282,8 @@ async function createLocation() {
       address: form.address || null,
       note:    form.note    || null,
     });
-
     Object.assign(form, { entity_id: "", region_id: "", city_id: "", postal_code_id: "", name: "", address: "", note: "" });
     regions.value = cities.value = postalCodes.value = [];
-
     success.value = "Lokacija je uspješno spremljena.";
     await loadLocations();
   } catch {
@@ -395,128 +392,145 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 24px; }
-.page-header h1 { margin: 0; font-size: 30px; color: #111827; }
-.page-header p { margin-top: 6px; color: #6b7280; }
+.page-header { margin-bottom: 20px; }
+.page-header h1 { margin: 0; font-size: 28px; color: #111827; }
+.page-header p { margin-top: 5px; color: #6b7280; font-size: 14px; }
 
 .panel {
   background: rgba(255,255,255,0.9);
   border: 1px solid #e5e7eb;
   border-radius: 22px;
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
   box-shadow: 0 18px 40px rgba(15,23,42,0.06);
 }
-.panel h2 { margin-top: 0; margin-bottom: 18px; font-size: 20px; color: #111827; }
+.panel h2 { margin-top: 0; margin-bottom: 16px; font-size: 16px; color: #111827; }
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.panel-header h2 { margin: 0; }
+
+.count-badge {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+}
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
-
 .field { display: flex; flex-direction: column; }
-.field.full { grid-column: span 2; }
-.actions.full { grid-column: span 2; }
+.field.full { grid-column: span 3; }
+.actions.full { grid-column: span 3; display: flex; gap: 8px; padding-top: 2px; }
 
 label {
-  font-size: 14px;
-  color: #374151;
-  margin-bottom: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 5px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
+.optional { font-weight: 400; color: #9ca3af; font-size: 12px; text-transform: none; letter-spacing: 0; }
 
 input, select, textarea {
   border: 1px solid #d1d5db;
-  border-radius: 12px;
-  padding: 12px 13px;
-  font-size: 14px;
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 13px;
   background: white;
   color: #111827;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-textarea { min-height: 80px; resize: vertical; }
-
-select:disabled, input:disabled {
-  background: #f9fafb;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
+textarea { min-height: 68px; }
+select:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.12);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
 }
 
-button {
+.btn-primary {
   background: linear-gradient(135deg, #dc2626, #2563eb);
   color: white;
   border: none;
-  padding: 13px 20px;
-  border-radius: 12px;
+  padding: 10px 18px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: bold;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
 }
-button:disabled { opacity: 0.55; cursor: not-allowed; }
-
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-secondary {
-  background: #6b7280;
-  color: white;
-  border: none;
-  padding: 13px 20px;
-  border-radius: 12px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  padding: 10px 18px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 13px;
 }
-.btn-secondary:hover { background: #4b5563; }
 
-.small-btn {
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white;
-  border: none;
-  padding: 8px 11px;
-  border-radius: 9px;
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: bold;
-}
-.small-btn.danger { background: #dc2626; }
-
-.error { color: #dc2626; margin-top: 12px; }
-.success { color: #16a34a; margin-top: 12px; }
-.loading { color: #6b7280; padding: 12px 0; }
+.error { color: #dc2626; margin-top: 10px; font-size: 13px; }
+.success { color: #16a34a; margin-top: 10px; font-size: 13px; }
+.loading, .empty { text-align: center; color: #6b7280; padding: 24px; font-size: 14px; }
 
 table { width: 100%; border-collapse: collapse; }
 th {
   text-align: left;
   background: #f9fafb;
-  color: #6b7280;
-  font-size: 13px;
-  padding: 13px;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
 }
 td {
-  padding: 13px;
+  padding: 10px 12px;
   border-bottom: 1px solid #eef2f7;
   color: #374151;
-  font-size: 14px;
+  font-size: 13px;
   vertical-align: middle;
 }
-
-.table-actions { display: flex; gap: 8px; }
+tr:last-child td { border-bottom: none; }
+.table-actions { display: flex; gap: 6px; }
 
 .badge {
   display: inline-flex;
-  padding: 5px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
 }
-.badge-blue { background: rgba(37,99,235,0.12); color: #2563eb; }
+.badge-blue { background: rgba(37,99,235,0.1); color: #2563eb; }
 
-.empty { text-align: center; color: #6b7280; padding: 28px; }
+.small-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.small-btn:hover { background: #e5e7eb; }
+.small-btn.danger { background: rgba(220,38,38,0.08); color: #dc2626; border-color: rgba(220,38,38,0.2); }
+.small-btn.danger:hover { background: rgba(220,38,38,0.15); }
 
 /* Modal */
 .modal-backdrop {
@@ -531,22 +545,19 @@ td {
 .modal {
   background: #fff;
   border-radius: 22px;
-  padding: 28px;
-  width: 620px;
+  padding: 24px;
+  width: 680px;
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
-.modal h2 { margin: 0 0 20px; font-size: 20px; color: #111827; }
+.modal h2 { margin: 0 0 16px; font-size: 16px; color: #111827; }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 4px;
+@media (max-width: 900px) {
+  .form-grid { grid-template-columns: 1fr 1fr; }
+  .field.full, .actions.full { grid-column: span 2; }
 }
-
 @media (max-width: 760px) {
   .form-grid { grid-template-columns: 1fr; }
   .field.full, .actions.full { grid-column: span 1; }
