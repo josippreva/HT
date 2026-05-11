@@ -35,49 +35,28 @@
 
         <div class="field">
           <label>Grad/općina</label>
-          <select
-            v-model="form.city_id"
-            @change="onCityChange"
-            :disabled="!form.rak_block_id || blockResolving"
-            required
-          >
-            <option value="">
-              {{ blockResolving ? 'Učitavanje...' : citiesForRegion.length ? 'Odaberi grad' : 'Odaberi RAK blok prvo' }}
-            </option>
-            <option v-for="city in citiesForRegion" :key="city.id" :value="city.id">
-              {{ city.name }}
-            </option>
+          <select v-model="form.city_id" @change="onCityChange" :disabled="!form.rak_block_id || blockResolving" required>
+            <option value="">{{ blockResolving ? 'Učitavanje...' : citiesForRegion.length ? 'Odaberi grad' : 'Odaberi RAK blok prvo' }}</option>
+            <option v-for="city in citiesForRegion" :key="city.id" :value="city.id">{{ city.name }}</option>
           </select>
         </div>
 
         <div class="field">
           <label>Lokacija</label>
           <select v-model="form.location_id" @change="onLocationChange" :disabled="!form.city_id" required>
-            <option value="">
-              {{ !form.city_id ? 'Odaberi grad prvo' : 'Odaberi lokaciju' }}
-            </option>
-            <option v-for="location in locationsForCity" :key="location.id" :value="location.id">
-              {{ location.name }}
-            </option>
+            <option value="">{{ !form.city_id ? 'Odaberi grad prvo' : 'Odaberi lokaciju' }}</option>
+            <option v-for="location in locationsForCity" :key="location.id" :value="location.id">{{ location.name }}</option>
           </select>
-          <span v-if="form.city_id && locationsForCity.length === 0" class="field-hint">
-            Nema lokacija za odabrani grad.
-          </span>
+          <span v-if="form.city_id && locationsForCity.length === 0" class="field-hint">Nema lokacija za odabrani grad.</span>
         </div>
 
         <div class="field">
           <label>Uređaj</label>
           <select v-model="form.device_id" :disabled="!form.location_id" required>
-            <option value="">
-              {{ !form.location_id ? 'Odaberi lokaciju prvo' : devicesForLocation.length === 0 ? 'Nema uređaja na lokaciji' : 'Odaberi uređaj' }}
-            </option>
-            <option v-for="device in devicesForLocation" :key="device.id" :value="device.id">
-              {{ device.name }} — {{ device.device_type }}
-            </option>
+            <option value="">{{ !form.location_id ? 'Odaberi lokaciju prvo' : devicesForLocation.length === 0 ? 'Nema uređaja na lokaciji' : 'Odaberi uređaj' }}</option>
+            <option v-for="device in devicesForLocation" :key="device.id" :value="device.id">{{ device.name }} — {{ device.device_type }}</option>
           </select>
-          <span v-if="form.location_id && devicesForLocation.length === 0" class="field-hint">
-            Nema uređaja za odabranu lokaciju.
-          </span>
+          <span v-if="form.location_id && devicesForLocation.length === 0" class="field-hint">Nema uređaja za odabranu lokaciju.</span>
         </div>
 
         <div class="field">
@@ -104,10 +83,59 @@
       <p v-if="success" class="success">{{ success }}</p>
     </section>
 
+    <!-- Filteri -->
+    <section class="panel">
+      <div class="filters-top">
+        <div class="field">
+          <label>Pretraga</label>
+          <input v-model="filters.search" type="text" placeholder="Naziv raspona..." />
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select v-model="filters.generated">
+            <option value="">Svi statusi</option>
+            <option value="true">Generirano</option>
+            <option value="false">Nije generirano</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filters-bottom">
+        <div class="field">
+          <label>Entitet</label>
+          <select v-model="filters.entity_id" @change="onFilterEntityChange">
+            <option value="">Svi entiteti</option>
+            <option v-for="entity in entities" :key="entity.id" :value="entity.id">{{ entity.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Regija</label>
+          <select v-model="filters.region_id" @change="onFilterRegionChange" :disabled="!filters.entity_id">
+            <option value="">Sve regije</option>
+            <option v-for="region in filterRegions" :key="region.id" :value="region.id">{{ region.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Grad</label>
+          <select v-model="filters.city_id" @change="onFilterCityChange" :disabled="!filters.region_id">
+            <option value="">Svi gradovi</option>
+            <option v-for="city in filterCities" :key="city.id" :value="city.id">{{ city.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Lokacija</label>
+          <select v-model="filters.location_id" @change="onFilterLocationChange" :disabled="!filters.city_id">
+            <option value="">Sve lokacije</option>
+            <option v-for="loc in filterLocations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
     <section class="panel">
       <div class="panel-header">
         <h2>Popis raspona</h2>
-        <span class="count-badge">Ukupno: {{ ranges.length }}</span>
+        <span class="count-badge">Ukupno: {{ filteredRanges.length }}</span>
       </div>
 
       <div v-if="loading" class="loading">Učitavanje...</div>
@@ -126,12 +154,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="range in ranges" :key="range.id">
+          <tr v-for="range in filteredRanges" :key="range.id">
             <td><strong>{{ range.name || "—" }}</strong></td>
             <td>{{ range.range_start }} – {{ range.range_end }}</td>
             <td>{{ range.range_size }}</td>
             <td>{{ range.rak_block_start }} – {{ range.rak_block_end }}</td>
-            <td>{{ range.location_name }} — {{ range.city_name }}</td>
+            <td>
+              {{ range.location_name }}
+              <div class="muted">{{ range.city_name }}</div>
+            </td>
             <td>{{ range.device_name || "—" }}</td>
             <td>
               <span class="badge" :class="range.generated ? 'badge-green' : 'badge-gray'">
@@ -144,8 +175,8 @@
               </button>
             </td>
           </tr>
-          <tr v-if="ranges.length === 0">
-            <td colspan="8" class="empty">Nema unesenih raspona.</td>
+          <tr v-if="filteredRanges.length === 0">
+            <td colspan="8" class="empty">Nema raspona za prikaz.</td>
           </tr>
         </tbody>
       </table>
@@ -157,15 +188,24 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import api from "../api/client";
 
+// Form refs
 const rakBlocks = ref([]);
 const allLocations = ref([]);
 const ranges = ref([]);
 
-const resolvedRegionId = ref(null);
-const resolvedRegionName = ref("");
+// Form cascade
 const citiesForRegion = ref([]);
 const locationsForCity = ref([]);
 const devicesForLocation = ref([]);
+
+// Filter cascade
+const entities = ref([]);
+const filterRegions = ref([]);
+const filterCities = ref([]);
+const filterLocations = ref([]);
+
+const resolvedRegionId = ref(null);
+const resolvedRegionName = ref("");
 
 const loading = ref(false);
 const blockResolving = ref(false);
@@ -173,18 +213,33 @@ const error = ref("");
 const success = ref("");
 
 const form = reactive({
-  rak_block_id: "",
+  rak_block_id: "", city_id: "", location_id: "",
+  device_id: "", name: "", range_start: "", range_end: "",
+});
+
+const filters = reactive({
+  search: "",
+  generated: "",
+  entity_id: "",
+  region_id: "",
   city_id: "",
   location_id: "",
-  device_id: "",
-  name: "",
-  range_start: "",
-  range_end: "",
+});
+
+// Clientside — samo search i generated, ostalo ide na backend
+const filteredRanges = computed(() => {
+  return ranges.value.filter((r) => {
+    if (filters.search && !r.name?.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (filters.generated !== "" && r.generated !== (filters.generated === "true")) return false;
+    return true;
+  });
 });
 
 const selectedBlock = computed(() =>
   rakBlocks.value.find((b) => String(b.id) === String(form.rak_block_id))
 );
+
+// ── Load functions ──────────────────────────────────────
 
 async function loadRakBlocks() {
   const response = await api.get("/rak-number-blocks");
@@ -196,50 +251,50 @@ async function loadAllLocations() {
   allLocations.value = response.data;
 }
 
+async function loadEntities() {
+  const { data } = await api.get("/entities");
+  entities.value = data;
+}
+
 async function loadRanges() {
   loading.value = true;
   try {
-    const response = await api.get("/number-ranges");
+    const params = new URLSearchParams();
+    if (filters.entity_id) params.append("entity_id", filters.entity_id);
+    if (filters.region_id) params.append("region_id", filters.region_id);
+    if (filters.city_id) params.append("city_id", filters.city_id);
+    if (filters.location_id) params.append("location_id", filters.location_id);
+    const query = params.toString();
+    const response = await api.get(query ? `/number-ranges?${query}` : "/number-ranges");
     ranges.value = response.data;
   } finally {
     loading.value = false;
   }
 }
 
+// ── Form cascade ────────────────────────────────────────
+
 async function onRakBlockChange() {
-  form.city_id = "";
-  form.location_id = "";
-  form.device_id = "";
-  resolvedRegionId.value = null;
-  resolvedRegionName.value = "";
-  citiesForRegion.value = [];
-  locationsForCity.value = [];
-  devicesForLocation.value = [];
+  form.city_id = ""; form.location_id = ""; form.device_id = "";
+  resolvedRegionId.value = null; resolvedRegionName.value = "";
+  citiesForRegion.value = []; locationsForCity.value = []; devicesForLocation.value = [];
   error.value = "";
-
   if (!form.rak_block_id || !selectedBlock.value) return;
-
   const areaCode = selectedBlock.value.area_code;
   if (!areaCode) return;
-
   blockResolving.value = true;
   try {
     const response = await api.get("/area-codes");
-    const areaCodes = response.data;
-    const match = areaCodes.find((ac) => String(ac.code) === String(areaCode));
-
+    const match = response.data.find((ac) => String(ac.code) === String(areaCode));
     if (!match) {
       const citiesRes = await api.get("/cities");
       citiesForRegion.value = citiesRes.data;
       return;
     }
-
     resolvedRegionId.value = match.region_id;
     resolvedRegionName.value = match.region_name;
-
     const citiesRes = await api.get(`/cities?region_id=${match.region_id}`);
     citiesForRegion.value = citiesRes.data;
-
     if (match.city_id) {
       form.city_id = match.city_id;
       await onCityChange();
@@ -252,10 +307,8 @@ async function onRakBlockChange() {
 }
 
 async function onCityChange() {
-  form.location_id = "";
-  form.device_id = "";
-  locationsForCity.value = [];
-  devicesForLocation.value = [];
+  form.location_id = ""; form.device_id = "";
+  locationsForCity.value = []; devicesForLocation.value = [];
   if (!form.city_id) return;
   locationsForCity.value = allLocations.value.filter(
     (loc) => Number(loc.city_id) === Number(form.city_id)
@@ -263,16 +316,59 @@ async function onCityChange() {
 }
 
 async function onLocationChange() {
-  form.device_id = "";
-  devicesForLocation.value = [];
+  form.device_id = ""; devicesForLocation.value = [];
   if (!form.location_id) return;
   const response = await api.get(`/devices?location_id=${form.location_id}`);
   devicesForLocation.value = response.data;
 }
 
+// ── Filter cascade ──────────────────────────────────────
+
+async function onFilterEntityChange() {
+  filters.region_id = "";
+  filters.city_id = "";
+  filters.location_id = "";
+  filterRegions.value = [];
+  filterCities.value = [];
+  filterLocations.value = [];
+  if (filters.entity_id) {
+    const { data } = await api.get(`/regions?entity_id=${filters.entity_id}`);
+    filterRegions.value = data;
+  }
+  await loadRanges();
+}
+
+async function onFilterRegionChange() {
+  filters.city_id = "";
+  filters.location_id = "";
+  filterCities.value = [];
+  filterLocations.value = [];
+  if (filters.region_id) {
+    const { data } = await api.get(`/cities?region_id=${filters.region_id}`);
+    filterCities.value = data;
+  }
+  await loadRanges();
+}
+
+function onFilterCityChange() {
+  filters.location_id = "";
+  filterLocations.value = [];
+  if (filters.city_id) {
+    filterLocations.value = allLocations.value.filter(
+      (loc) => Number(loc.city_id) === Number(filters.city_id)
+    );
+  }
+  loadRanges();
+}
+
+async function onFilterLocationChange() {
+  await loadRanges();
+}
+
+// ── Submit ──────────────────────────────────────────────
+
 async function createRange() {
-  error.value = "";
-  success.value = "";
+  error.value = ""; success.value = "";
   try {
     await api.post("/number-ranges", {
       rak_block_id: Number(form.rak_block_id),
@@ -286,11 +382,8 @@ async function createRange() {
       rak_block_id: "", city_id: "", location_id: "",
       device_id: "", name: "", range_start: "", range_end: "",
     });
-    resolvedRegionId.value = null;
-    resolvedRegionName.value = "";
-    citiesForRegion.value = [];
-    locationsForCity.value = [];
-    devicesForLocation.value = [];
+    resolvedRegionId.value = null; resolvedRegionName.value = "";
+    citiesForRegion.value = []; locationsForCity.value = []; devicesForLocation.value = [];
     success.value = "Raspon je uspješno spremljen.";
     await loadRanges();
   } catch (err) {
@@ -300,8 +393,7 @@ async function createRange() {
 
 async function generateNumbers(range) {
   if (!confirm(`Generirati brojeve za raspon ${range.range_start} – ${range.range_end}?`)) return;
-  error.value = "";
-  success.value = "";
+  error.value = ""; success.value = "";
   try {
     const response = await api.post(`/phone-numbers/generate/${range.id}`);
     success.value = response.data.message;
@@ -312,7 +404,7 @@ async function generateNumbers(range) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadRakBlocks(), loadAllLocations()]);
+  await Promise.all([loadRakBlocks(), loadAllLocations(), loadEntities()]);
   await loadRanges();
 });
 </script>
@@ -409,8 +501,7 @@ input:focus, select:focus {
 }
 
 .spinner-inline {
-  width: 14px;
-  height: 14px;
+  width: 14px; height: 14px;
   border: 2px solid #e5e7eb;
   border-top-color: #dc2626;
   border-radius: 50%;
@@ -418,6 +509,25 @@ input:focus, select:focus {
   flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.filters-top {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+.filters-bottom {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  align-items: end;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+}
+.filters-top label, .filters-bottom label { font-size: 11px; }
+.filters-top input, .filters-top select,
+.filters-bottom select { padding: 8px 10px; font-size: 12px; }
 
 .btn-primary {
   background: linear-gradient(135deg, #dc2626, #2563eb);
@@ -433,6 +543,7 @@ input:focus, select:focus {
 .error { color: #dc2626; margin-top: 10px; font-size: 13px; }
 .success { color: #16a34a; margin-top: 10px; font-size: 13px; }
 .loading, .empty { text-align: center; color: #6b7280; padding: 24px; font-size: 14px; }
+.muted { color: #6b7280; font-size: 12px; margin-top: 1px; }
 
 table { width: 100%; border-collapse: collapse; }
 th {
@@ -478,19 +589,22 @@ tr:last-child td { border-bottom: none; }
   transition: background 0.15s;
 }
 .small-btn:hover { background: #e5e7eb; }
-
 .small-btn.generate {
   background: rgba(37,99,235,0.1);
   color: #2563eb;
   border-color: rgba(37,99,235,0.25);
 }
 .small-btn.generate:hover { background: rgba(37,99,235,0.18); }
+
 @media (max-width: 900px) {
+  .filters-top { grid-template-columns: 1fr; }
+  .filters-bottom { grid-template-columns: 1fr 1fr; }
   .form-grid { grid-template-columns: 1fr 1fr; }
   .field.full, .actions.full { grid-column: span 2; }
 }
 @media (max-width: 760px) {
   .form-grid { grid-template-columns: 1fr; }
   .field.full, .actions.full { grid-column: span 1; }
+  .filters-bottom { grid-template-columns: 1fr; }
 }
 </style>

@@ -10,7 +10,7 @@ from app.models import (
     City,
     Device,
 )
-from app.models import Region
+from app.models import Region, Entity
 from app.schemas.number_range import NumberRangeCreate, NumberRangeUpdate
 from app.api.deps import get_current_user
 router = APIRouter(prefix="/number-ranges", tags=["Number Ranges"],dependencies=[Depends(get_current_user)])
@@ -76,22 +76,32 @@ def validate_device_location(db: Session, device_id: int, location_id: int) -> N
 def list_number_ranges(
     rak_block_id: int | None = Query(default=None),
     location_id: int | None = Query(default=None),
+    city_id: int | None = Query(default=None),
+    region_id: int | None = Query(default=None),
+    entity_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
     query = (
-        db.query(NumberRange, RakNumberBlock, AreaCode, Location, City, Device)
+        db.query(NumberRange, RakNumberBlock, AreaCode, Location, City, Device, Region, Entity)
         .join(RakNumberBlock, NumberRange.rak_block_id == RakNumberBlock.id)
         .join(AreaCode, RakNumberBlock.area_code_id == AreaCode.id)
         .join(Location, NumberRange.location_id == Location.id)
         .join(City, Location.city_id == City.id)
+        .join(Region, City.region_id == Region.id)
+        .join(Entity, Region.entity_id == Entity.id)
         .join(Device, NumberRange.device_id == Device.id)
     )
 
     if rak_block_id:
         query = query.filter(NumberRange.rak_block_id == rak_block_id)
-
     if location_id:
         query = query.filter(NumberRange.location_id == location_id)
+    if city_id:
+        query = query.filter(City.id == city_id)
+    if region_id:
+        query = query.filter(Region.id == region_id)
+    if entity_id:
+        query = query.filter(Entity.id == entity_id)
 
     rows = query.order_by(NumberRange.range_start).all()
 
@@ -111,9 +121,12 @@ def list_number_ranges(
             "area_code": area_code.code,
             "location_name": location.name,
             "city_name": city.name,
+            "city_id": city.id,
+            "region_id": region.id,
+            "entity_id": entity.id,
             "device_name": device.name,
         }
-        for number_range, rak_block, area_code, location, city, device in rows
+        for number_range, rak_block, area_code, location, city, device, region, entity in rows
     ]
 
 
