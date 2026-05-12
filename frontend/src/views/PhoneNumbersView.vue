@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="page-header">
-      <h1>Brojevi</h1>
+      <h1><i class="ti ti-phone"></i> Brojevi</h1>
       <p>Pregled, filtriranje i upravljanje fiksnim telefonskim brojevima.</p>
     </div>
 
@@ -32,7 +32,6 @@
             v-model="filters.search"
             type="text"
             placeholder="Broj, pretplatnik, OIB, JMBG, interni ID..."
-            @input="resetAndLoad"
           />
         </div>
 
@@ -87,11 +86,23 @@
         </div>
 
         <div class="field">
+          <label>Kategorija</label>
+          <select v-model="filters.number_category" @change="resetAndLoad">
+            <option value="">Sve kategorije</option>
+            <option value="premium">Premium</option>
+            <option value="gold">Gold</option>
+            <option value="silver">Silver</option>
+            <option value="bronze">Bronze</option>
+            <option value="standard">Standard</option>
+          </select>
+        </div>
+
+        <div class="field">
           <label>Raspon</label>
           <select v-model="filters.number_range_id" @change="resetAndLoad">
             <option value="">Svi rasponi</option>
             <option v-for="range in ranges" :key="range.id" :value="range.id">
-              {{ formatPhoneNumber(range.range_start) }} - {{ formatPhoneNumber(range.range_end) }} | {{ range.location_name }}
+              {{ formatRangeNumber(range.range_start) }} – {{ formatRangeNumber(range.range_end) }} | {{ range.location_name }}
             </option>
           </select>
         </div>
@@ -107,40 +118,81 @@
       <div v-if="loading" class="loading">Učitavanje brojeva...</div>
 
       <table v-else>
+        <colgroup>
+          <col style="width: 152px;">
+          <col style="width: 108px;">
+          <col style="width: 96px;">
+          <col>
+          <col style="width: 118px;">
+          <col style="width: 160px;">
+          <col style="width: 134px;">
+        </colgroup>
         <thead>
           <tr>
             <th>Broj</th>
+            <th>Kategorija</th>
             <th>Status</th>
             <th>Pretplatnik</th>
-            <th>OIB/JMBG</th>
+            <th>OIB / JMBG</th>
             <th>Lokacija</th>
-            <th>Raspon</th>
-            <th>Akcije</th>
+            <th style="text-align:center;">Akcije</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="phone in phoneNumbers" :key="phone.id">
-            <td><strong class="number">{{ formatPhoneNumber(phone.number_value) }}</strong></td>
+          <tr v-for="phone in phoneNumbers" :key="phone.id" :class="categoryRowClass(phone.number_category)">
             <td>
-              <span class="badge" :class="statusClass(phone.status)">
-                {{ statusLabel(phone.status) }}
+              <strong class="number">{{ formatPhoneNumber(phone.number_value) }}</strong>
+            </td>
+            <td>
+              <span class="category-badge" :class="categoryBadgeClass(phone.number_category)">
+                <span v-if="categoryIcon(phone.number_category)" class="category-icon">{{ categoryIcon(phone.number_category) }}</span>
+                {{ categoryLabel(phone.number_category) }}
               </span>
             </td>
             <td>
-              <strong>{{ phone.subscriber_name || "—" }}</strong>
-              <div v-if="phone.subscriber_external_id" class="muted">{{ phone.subscriber_external_id }}</div>
+              <span class="badge" :class="statusClass(phone.status)">{{ statusLabel(phone.status) }}</span>
             </td>
-            <td>{{ phone.subscriber_oib || phone.subscriber_jmbg || "—" }}</td>
             <td>
-              {{ phone.location_name }}
-              <div class="muted">{{ phone.city_name }}</div>
+              <span class="cell-main">{{ phone.subscriber_name || "—" }}</span>
+              <span v-if="phone.subscriber_external_id" class="cell-sub">{{ phone.subscriber_external_id }}</span>
             </td>
-            <td>{{ formatPhoneNumber(phone.range_start) }} - {{ formatPhoneNumber(phone.range_end) }}</td>
-            <td class="table-actions">
-              <button v-if="phone.status === 'slobodan'" class="small-btn assign" @click="openAssign(phone)">Dodijeli</button>
-              <button v-if="phone.status === 'zauzet'" class="small-btn danger" @click="releasePhone(phone)">Oslobodi</button>
-              <button v-if="phone.status !== 'karantena'" class="small-btn warning" @click="quarantinePhone(phone)">Karantena</button>
-              <button v-if="phone.status === 'karantena'" class="small-btn" @click="activatePhone(phone)">Aktiviraj</button>
+            <td class="mono-cell">{{ phone.subscriber_oib || phone.subscriber_jmbg || "—" }}</td>
+            <td>
+              <div class="cell-main">
+                {{ phone.location_name }}
+              </div>
+
+              <div v-if="phone.city_name" class="cell-sub">
+                {{ phone.city_name }}
+              </div>
+            </td>
+            <td>
+              <div class="table-actions">
+                <template v-if="phone.status === 'slobodan'">
+                  <button class="action-btn action-assign" @click="openAssign(phone)" title="Dodijeli pretplatniku">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                    Dodijeli
+                  </button>
+                  <button class="action-btn action-warn" @click="quarantinePhone(phone)" title="Karantena">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  </button>
+                </template>
+                <template v-else-if="phone.status === 'zauzet'">
+                  <button class="action-btn action-danger" @click="releasePhone(phone)" title="Oslobodi broj">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="10" x2="16" y2="10"/></svg>
+                    Oslobodi
+                  </button>
+                  <button class="action-btn action-warn" @click="quarantinePhone(phone)" title="Karantena">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  </button>
+                </template>
+                <template v-else-if="phone.status === 'karantena'">
+                  <button class="action-btn action-ok" @click="activatePhone(phone)" title="Aktiviraj broj">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Aktiviraj
+                  </button>
+                </template>
+              </div>
             </td>
           </tr>
           <tr v-if="phoneNumbers.length === 0">
@@ -149,183 +201,42 @@
         </tbody>
       </table>
 
-     <div class="pagination" v-if="pages > 1">
-       <button class="page-btn" :disabled="page <= 1" @click="changePage(page - 1)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="page-info">{{ page }} <span class="page-sep">/</span> {{ pages }}</span>
+      <div class="pagination" v-if="pages > 1">
+        <button class="page-btn" :disabled="page <= 1" @click="changePage(page - 1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="page-info">{{ page }} <span class="page-sep">/</span> {{ pages }}</span>
         <button class="page-btn" :disabled="page >= pages" @click="changePage(page + 1)">
-         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
     </section>
 
-    <!-- ASSIGN MODAL -->
-    <div v-if="assignModalOpen" class="modal-overlay" @click.self="closeAssign">
-      <div class="modal">
-
-        <div class="modal-header">
-          <div class="modal-title-group">
-            <div class="modal-phone-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.45 5.45l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/></svg>
-              {{ formatPhoneNumber(selectedPhone?.number_value) }}
-            </div>
-            <h3>Dodjela broja pretplatniku</h3>
-            <p class="modal-subtitle">{{ selectedPhone?.entity_name }} / {{ selectedPhone?.region_name }} / {{ selectedPhone?.city_name }} / {{ selectedPhone?.location_name }}</p>
-          </div>
-          <button class="close-btn" @click="closeAssign">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div class="modal-col modal-col-list">
-            <div class="search-bar-wrapper">
-              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input
-                ref="subscriberSearchInput"
-                v-model="subscriberFilters.search"
-                type="text"
-                class="search-bar"
-                placeholder="Ime, OIB, JMBG, interni ID..."
-              />
-              <button v-if="subscriberFilters.search" class="search-clear" @click="clearSubscriberSearch">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-
-            <div class="type-tabs">
-              <button class="type-tab" :class="{ active: subscriberFilters.type === '' }" @click="setSubscriberType('')">Svi</button>
-              <button class="type-tab" :class="{ active: subscriberFilters.type === 'physical_person' }" @click="setSubscriberType('physical_person')">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Fizička osoba
-              </button>
-              <button class="type-tab" :class="{ active: subscriberFilters.type === 'legal_entity' }" @click="setSubscriberType('legal_entity')">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                Pravna osoba
-              </button>
-            </div>
-
-            <div class="subscriber-list-scroll">
-              <div v-if="subscribersLoading" class="sub-loading">
-                <div class="spinner"></div>
-                <span>Pretraga...</span>
-              </div>
-              <template v-else>
-                <div
-                  v-for="subscriber in filteredSubscribers"
-                  :key="subscriber.id"
-                  class="subscriber-row"
-                  :class="{ selected: Number(assignForm.subscriber_id) === Number(subscriber.id) }"
-                  @click="selectSubscriber(subscriber)"
-                >
-                  <div class="subscriber-avatar" :class="subscriber.subscriber_type === 'legal_entity' ? 'avatar-blue' : 'avatar-red'">
-                    <svg v-if="subscriber.subscriber_type === 'legal_entity'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                    <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  </div>
-                  <div class="subscriber-info">
-                    <strong>{{ subscriberName(subscriber) }}</strong>
-                    <span class="subscriber-meta">
-                      {{ subscriber.oib || subscriber.jmbg || subscriber.external_id || "Bez identifikatora" }}
-                      <span v-if="subscriber.city_name" class="meta-sep">·</span>
-                      {{ subscriber.city_name }}
-                    </span>
-                  </div>
-                  <div class="subscriber-check">
-                    <svg v-if="Number(assignForm.subscriber_id) === Number(subscriber.id)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                </div>
-                <div v-if="filteredSubscribers.length === 0" class="sub-empty">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <p>Nema rezultata za &ldquo;{{ subscriberFilters.search || "odabrane filtere" }}&rdquo;</p>
-                  <RouterLink class="create-link-inline" to="/subscribers">Kreiraj novog pretplatnika</RouterLink>
-                </div>
-              </template>
-            </div>
-          </div>
-
-          <div class="modal-col modal-col-detail">
-            <div v-if="selectedSubscriber" class="selected-subscriber-card">
-              <div class="selected-header">
-                <span class="selected-label">Odabrani pretplatnik</span>
-                <button class="deselect-btn" @click="deselectSubscriber">Poništi</button>
-              </div>
-              <div class="selected-name">{{ subscriberName(selectedSubscriber) }}</div>
-              <div class="selected-meta-grid">
-                <div class="selected-meta-item">
-                  <span class="meta-key">Tip</span>
-                  <span class="badge" :class="selectedSubscriber.subscriber_type === 'legal_entity' ? 'badge-blue' : 'badge-red'">
-                    {{ selectedSubscriber.subscriber_type === 'legal_entity' ? 'Pravna osoba' : 'Fizička osoba' }}
-                  </span>
-                </div>
-                <div v-if="selectedSubscriber.oib || selectedSubscriber.jmbg" class="selected-meta-item">
-                  <span class="meta-key">{{ selectedSubscriber.oib ? 'OIB' : 'JMBG' }}</span>
-                  <span class="meta-val">{{ selectedSubscriber.oib || selectedSubscriber.jmbg }}</span>
-                </div>
-                <div v-if="selectedSubscriber.external_id" class="selected-meta-item">
-                  <span class="meta-key">Interni ID</span>
-                  <span class="meta-val">{{ selectedSubscriber.external_id }}</span>
-                </div>
-                <div v-if="selectedSubscriber.city_name" class="selected-meta-item">
-                  <span class="meta-key">Grad</span>
-                  <span class="meta-val">{{ selectedSubscriber.city_name }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="no-selection-placeholder">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <p>Odaberi pretplatnika<br>s popisa lijevo</p>
-            </div>
-
-            <div class="note-field">
-              <label>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Napomena <span class="optional">(opcionalno)</span>
-              </label>
-              <textarea v-model="assignForm.note" placeholder="Npr. ugovor br. 1234, zamjena uređaja..."></textarea>
-            </div>
-
-            <RouterLink class="create-subscriber-link" to="/subscribers">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Kreiraj novog pretplatnika
-            </RouterLink>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <p v-if="error" class="error">{{ error }}</p>
-          <div class="footer-actions">
-            <button class="btn-secondary" @click="closeAssign">Odustani</button>
-            <button class="btn-primary" :disabled="!assignForm.subscriber_id" @click="assignPhone">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Dodijeli broj
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- ASSIGN MODAL KOMPONENTA -->
+    <AssignModal
+      v-if="assignModalOpen"
+      :phone="selectedPhone"
+      @close="closeAssign"
+      @assigned="onAssigned"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, reactive, ref } from "vue";
-import { RouterLink } from "vue-router";
+import { onMounted, reactive, ref, watch } from "vue";
 import api from "../api/client";
+import AssignModal from "../components/AssignPhoneModal.vue";
 
 const phoneNumbers = ref([]);
 const ranges = ref([]);
-const subscribers = ref([]);
 
 const entities = ref([]);
 const regions = ref([]);
 const cities = ref([]);
 const locations = ref([]);
 const devices = ref([]);
-const subscriberCities = ref([]);
 
 const loading = ref(false);
-const subscribersLoading = ref(false);
-const error = ref("");
 
 const total = ref(0);
 const page = ref(1);
@@ -334,42 +245,44 @@ const perPage = 50;
 
 const assignModalOpen = ref(false);
 const selectedPhone = ref(null);
-const selectedSubscriber = ref(null);
-const subscriberSearchInput = ref(null);
-
-const filters = reactive({
-  search: "", status: "", number_range_id: "",
-  entity_id: "", region_id: "", city_id: "", location_id: "", device_id: "",
-});
-
-const subscriberFilters = reactive({ search: "", type: "", city_id: "" });
-const assignForm = reactive({ subscriber_id: "", note: "" });
 
 const stats = ref({ free: 0, busy: 0, quarantine: 0, total: 0 });
 
-const filteredSubscribers = computed(() => {
-  const q = subscriberFilters.search.toLowerCase().trim();
-  return subscribers.value.filter((subscriber) => {
-    const matchesType = !subscriberFilters.type || subscriber.subscriber_type === subscriberFilters.type;
-    const matchesCity = !subscriberFilters.city_id || Number(subscriber.city_id) === Number(subscriberFilters.city_id);
-    if (!matchesType || !matchesCity) return false;
-    if (!q) return true;
-    const fullName = `${subscriber.first_name || ""} ${subscriber.last_name || ""}`.toLowerCase();
-    const company = (subscriber.company_name || "").toLowerCase();
-    const oib = (subscriber.oib || "").toLowerCase();
-    const jmbg = (subscriber.jmbg || "").toLowerCase();
-    const extId = (subscriber.external_id || "").toLowerCase();
-    return fullName.includes(q) || company.includes(q) || oib.includes(q) || jmbg.includes(q) || extId.includes(q);
-  });
+const filters = reactive({
+  search: "",
+  status: "",
+  number_range_id: "",
+  number_category: "",
+  entity_id: "",
+  region_id: "",
+  city_id: "",
+  location_id: "",
+  device_id: "",
 });
 
+// =====================
+// FORMATIRANJE
+// =====================
+
 function formatPhoneNumber(value) {
+  if (!value) return "";
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length === 8) return `+387 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  if (digits.length === 9) return `+387 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  return value;
+}
+
+function formatRangeNumber(value) {
   if (!value) return "";
   const digits = String(value).replace(/\D/g, "");
   if (digits.length === 8) return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
   if (digits.length === 9) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
   return value;
 }
+
+// =====================
+// BADGE HELPERI
+// =====================
 
 function statusLabel(status) {
   if (status === "slobodan") return "Slobodan";
@@ -385,24 +298,52 @@ function statusClass(status) {
   return "badge-gray";
 }
 
-function subscriberName(subscriber) {
-  if (!subscriber) return "—";
-  if (subscriber.subscriber_type === "legal_entity") return subscriber.company_name || "—";
-  return `${subscriber.first_name || ""} ${subscriber.last_name || ""}`.trim() || "—";
+function categoryLabel(category) {
+  if (category === "premium") return "Premium";
+  if (category === "gold") return "Gold";
+  if (category === "silver") return "Silver";
+  if (category === "bronze") return "Bronze";
+  return "Standard";
 }
 
-function selectSubscriber(subscriber) {
-  assignForm.subscriber_id = subscriber.id;
-  selectedSubscriber.value = subscriber;
+function categoryIcon(category) {
+  if (category === "premium") return "💎";
+  if (category === "gold") return "🥇";
+  if (category === "silver") return "🥈";
+  if (category === "bronze") return "🥉";
+  return "";
 }
 
-function deselectSubscriber() {
-  assignForm.subscriber_id = "";
-  selectedSubscriber.value = null;
+function categoryBadgeClass(category) {
+  if (category === "premium") return "cat-premium";
+  if (category === "gold") return "cat-gold";
+  if (category === "silver") return "cat-silver";
+  if (category === "bronze") return "cat-bronze";
+  return "cat-standard";
 }
 
-function setSubscriberType(type) { subscriberFilters.type = type; }
-function clearSubscriberSearch() { subscriberFilters.search = ""; }
+function categoryRowClass(category) {
+  if (category === "premium") return "row-premium";
+  if (category === "gold") return "row-gold";
+  if (category === "silver") return "row-silver";
+  if (category === "bronze") return "row-bronze";
+  return "";
+}
+
+// =====================
+// DEBOUNCE ZA PRETRAGU
+// =====================
+
+let searchTimer = null;
+
+watch(() => filters.search, () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => resetAndLoad(), 350);
+});
+
+// =====================
+// FILTERI — KASKADA
+// =====================
 
 async function loadEntities() {
   const response = await api.get("/entities");
@@ -410,8 +351,14 @@ async function loadEntities() {
 }
 
 async function onEntityChange() {
-  filters.region_id = ""; filters.city_id = ""; filters.location_id = ""; filters.device_id = "";
-  regions.value = []; cities.value = []; locations.value = []; devices.value = [];
+  filters.region_id = "";
+  filters.city_id = "";
+  filters.location_id = "";
+  filters.device_id = "";
+  regions.value = [];
+  cities.value = [];
+  locations.value = [];
+  devices.value = [];
   if (filters.entity_id) {
     const response = await api.get(`/regions?entity_id=${filters.entity_id}`);
     regions.value = response.data;
@@ -420,8 +367,12 @@ async function onEntityChange() {
 }
 
 async function onRegionChange() {
-  filters.city_id = ""; filters.location_id = ""; filters.device_id = "";
-  cities.value = []; locations.value = []; devices.value = [];
+  filters.city_id = "";
+  filters.location_id = "";
+  filters.device_id = "";
+  cities.value = [];
+  locations.value = [];
+  devices.value = [];
   if (filters.region_id) {
     const response = await api.get(`/cities?region_id=${filters.region_id}`);
     cities.value = response.data;
@@ -430,8 +381,10 @@ async function onRegionChange() {
 }
 
 async function onCityChange() {
-  filters.location_id = ""; filters.device_id = "";
-  locations.value = []; devices.value = [];
+  filters.location_id = "";
+  filters.device_id = "";
+  locations.value = [];
+  devices.value = [];
   if (filters.city_id) {
     const response = await api.get("/locations");
     locations.value = response.data.filter((l) => Number(l.city_id) === Number(filters.city_id));
@@ -440,13 +393,18 @@ async function onCityChange() {
 }
 
 async function onLocationChange() {
-  filters.device_id = ""; devices.value = [];
+  filters.device_id = "";
+  devices.value = [];
   if (filters.location_id) {
     const response = await api.get(`/devices?location_id=${filters.location_id}`);
     devices.value = response.data;
   }
   resetAndLoad();
 }
+
+// =====================
+// UČITAVANJE PODATAKA
+// =====================
 
 async function loadRanges() {
   const response = await api.get("/number-ranges");
@@ -461,12 +419,14 @@ async function loadPhoneNumbers() {
     params.append("per_page", perPage);
     if (filters.search) params.append("search", filters.search);
     if (filters.status) params.append("status", filters.status);
+    if (filters.number_category) params.append("number_category", filters.number_category);
     if (filters.number_range_id) params.append("number_range_id", filters.number_range_id);
     if (filters.entity_id) params.append("entity_id", filters.entity_id);
     if (filters.region_id) params.append("region_id", filters.region_id);
     if (filters.city_id) params.append("city_id", filters.city_id);
     if (filters.location_id) params.append("location_id", filters.location_id);
     if (filters.device_id) params.append("device_id", filters.device_id);
+
     const response = await api.get(`/phone-numbers?${params.toString()}`);
     phoneNumbers.value = response.data.data;
     total.value = response.data.total;
@@ -477,63 +437,38 @@ async function loadPhoneNumbers() {
   }
 }
 
-async function loadSubscribers() {
-  subscribersLoading.value = true;
-  try {
-    const query = subscriberFilters.search ? `?search=${encodeURIComponent(subscriberFilters.search)}` : "";
-    const response = await api.get(`/subscribers${query}`);
-    subscribers.value = response.data;
-  } finally {
-    subscribersLoading.value = false;
-  }
+function resetAndLoad() {
+  page.value = 1;
+  loadPhoneNumbers();
 }
 
-async function loadSubscriberCitiesForSelectedPhone() {
-  subscriberCities.value = [];
-  if (!selectedPhone.value?.region_id) return;
-  const response = await api.get(`/cities?region_id=${selectedPhone.value.region_id}`);
-  subscriberCities.value = response.data;
+function changePage(newPage) {
+  page.value = newPage;
+  loadPhoneNumbers();
 }
 
-function resetAndLoad() { page.value = 1; loadPhoneNumbers(); }
-function changePage(newPage) { page.value = newPage; loadPhoneNumbers(); }
+// =====================
+// ASSIGN MODAL
+// =====================
 
-async function openAssign(phone) {
+function openAssign(phone) {
   selectedPhone.value = phone;
-  selectedSubscriber.value = null;
-  assignForm.subscriber_id = "";
-  assignForm.note = "";
-  subscriberFilters.search = "";
-  subscriberFilters.type = "";
-  subscriberFilters.city_id = phone.city_id || "";
-  error.value = "";
   assignModalOpen.value = true;
-  await loadSubscriberCitiesForSelectedPhone();
-  await loadSubscribers();
-  await nextTick();
-  subscriberSearchInput.value?.focus();
 }
 
 function closeAssign() {
   assignModalOpen.value = false;
   selectedPhone.value = null;
-  selectedSubscriber.value = null;
 }
 
-async function assignPhone() {
-  error.value = "";
-  if (!assignForm.subscriber_id) { error.value = "Odaberi pretplatnika s popisa."; return; }
-  try {
-    await api.post(`/phone-numbers/${selectedPhone.value.id}/assign`, {
-      subscriber_id: Number(assignForm.subscriber_id),
-      note: assignForm.note || null,
-    });
-    closeAssign();
-    await loadPhoneNumbers();
-  } catch (err) {
-    error.value = err.response?.data?.detail || "Greška pri dodjeli broja.";
-  }
+async function onAssigned() {
+  closeAssign();
+  await loadPhoneNumbers();
 }
+
+// =====================
+// AKCIJE NA BROJEVIMA
+// =====================
 
 async function releasePhone(phone) {
   if (!confirm(`Osloboditi broj ${formatPhoneNumber(phone.number_value)}?`)) return;
@@ -553,6 +488,10 @@ async function activatePhone(phone) {
   await loadPhoneNumbers();
 }
 
+// =====================
+// INIT
+// =====================
+
 onMounted(async () => {
   await loadEntities();
   await loadRanges();
@@ -562,7 +501,17 @@ onMounted(async () => {
 
 <style scoped>
 .page-header { margin-bottom: 20px; }
-.page-header h1 { margin: 0; font-size: 28px; color: #111827; }
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #111827;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+.page-header h1 i { font-size: 26px; color: #1B4FD8; }
 .page-header p { margin-top: 5px; color: #6b7280; font-size: 14px; }
 
 .stats-grid {
@@ -587,9 +536,9 @@ onMounted(async () => {
 }
 .stat-card strong { display: block; margin-top: 6px; font-size: 30px; font-weight: 700; }
 .stat-card.green strong { color: #16a34a; }
-.stat-card.red strong { color: #dc2626; }
+.stat-card.red strong   { color: #dc2626; }
 .stat-card.yellow strong { color: #b45309; }
-.stat-card.blue strong { color: #2563eb; }
+.stat-card.blue strong  { color: #2563eb; }
 
 .panel {
   background: rgba(255,255,255,0.9);
@@ -642,86 +591,129 @@ input, select, textarea {
   color: #111827;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-textarea { min-height: 68px; }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
 }
 
-table { width: 100%; border-collapse: collapse; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 th {
   text-align: left;
   background: #f9fafb;
   color: #9ca3af;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 10px 12px;
+  letter-spacing: 0.05em;
+  padding: 8px 12px;
   border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
 }
 td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #eef2f7;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f2f5;
   color: #374151;
   font-size: 13px;
   vertical-align: middle;
+  overflow: hidden;
 }
 tr:last-child td { border-bottom: none; }
-.table-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.number { color: #111827; font-family: monospace; font-size: 14px; }
-.muted { color: #6b7280; font-size: 12px; margin-top: 1px; }
+tr:hover td { background-color: rgba(0,0,0,0.018) !important; }
 
-.btn-primary {
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 700;
+.cell-main {
+  display: block;
+  font-weight: 600;
+  color: #111827;
   font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell-sub {
+  display: block;
+  color: #9ca3af;
+  font-size: 11px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell-sub-inline { color: #9ca3af; font-size: 11px; font-weight: 400; }
+.mono-cell {
+  font-family: monospace;
+  font-size: 12px;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.number {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.table-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  padding: 10px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.small-btn {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 12px;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.13s, border-color 0.13s;
+  line-height: 1.4;
 }
-.small-btn:hover { background: #e5e7eb; }
-.small-btn.danger { background: rgba(220,38,38,0.08); color: #dc2626; border-color: rgba(220,38,38,0.2); }
-.small-btn.danger:hover { background: rgba(220,38,38,0.15); }
-.small-btn.warning { background: rgba(245,158,11,0.1); color: #b45309; border-color: rgba(245,158,11,0.3); }
-.small-btn.warning:hover { background: rgba(245,158,11,0.18); }
+.action-assign { background: rgba(37,99,235,0.09); color: #1d4ed8; border-color: rgba(37,99,235,0.22); }
+.action-assign:hover { background: rgba(37,99,235,0.17); border-color: rgba(37,99,235,0.35); }
+.action-danger { background: rgba(220,38,38,0.08); color: #b91c1c; border-color: rgba(220,38,38,0.2); }
+.action-danger:hover { background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.32); }
+.action-warn { background: rgba(245,158,11,0.09); color: #92400e; border-color: rgba(245,158,11,0.28); padding: 4px 7px; }
+.action-warn:hover { background: rgba(245,158,11,0.17); border-color: rgba(245,158,11,0.4); }
+.action-ok { background: rgba(22,163,74,0.09); color: #15803d; border-color: rgba(22,163,74,0.22); }
+.action-ok:hover { background: rgba(22,163,74,0.16); border-color: rgba(22,163,74,0.35); }
 
+.row-premium td { background: rgba(109,40,217,0.07); border-bottom-color: rgba(109,40,217,0.1); }
+.row-premium .number { color: #6d28d9; }
+.row-gold td { background: rgba(180,120,10,0.08); border-bottom-color: rgba(180,120,10,0.12); }
+.row-gold .number { color: #92600a; }
+.row-silver td { background: rgba(100,116,139,0.08); border-bottom-color: rgba(100,116,139,0.12); }
+.row-silver .number { color: #475569; }
+.row-bronze td { background: rgba(146,64,14,0.07); border-bottom-color: rgba(146,64,14,0.11); }
+.row-bronze .number { color: #92400e; }
 
-.small-btn.assign {
-  background: rgba(37,99,235,0.1);
-  color: #2563eb;
-  border-color: rgba(37,99,235,0.25);
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
 }
-.small-btn.assign:hover { background: rgba(37,99,235,0.18); }
+.category-icon { font-size: 12px; line-height: 1; }
+.cat-premium  { background: rgba(109,40,217,0.12); color: #5b21b6; border-color: rgba(109,40,217,0.28); }
+.cat-gold     { background: rgba(180,120,10,0.12); color: #78500a; border-color: rgba(180,120,10,0.3); }
+.cat-silver   { background: rgba(100,116,139,0.12); color: #334155; border-color: rgba(100,116,139,0.3); }
+.cat-bronze   { background: rgba(146,64,14,0.11); color: #7c2d12; border-color: rgba(146,64,14,0.27); }
+.cat-standard { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
 
 .badge {
   display: inline-flex;
@@ -730,11 +722,11 @@ tr:last-child td { border-bottom: none; }
   font-size: 11px;
   font-weight: 700;
 }
-.badge-green { background: rgba(22,163,74,0.1); color: #16a34a; }
-.badge-red { background: rgba(220,38,38,0.1); color: #dc2626; }
-.badge-blue { background: rgba(37,99,235,0.1); color: #2563eb; }
+.badge-green  { background: rgba(22,163,74,0.1);   color: #16a34a; }
+.badge-red    { background: rgba(220,38,38,0.1);   color: #dc2626; }
+.badge-blue   { background: rgba(37,99,235,0.1);   color: #2563eb; }
 .badge-yellow { background: rgba(245,158,11,0.12); color: #b45309; }
-.badge-gray { background: rgba(107,114,128,0.1); color: #6b7280; }
+.badge-gray   { background: rgba(107,114,128,0.1); color: #6b7280; }
 
 .loading, .empty { text-align: center; color: #6b7280; padding: 24px; font-size: 14px; }
 
@@ -754,206 +746,10 @@ tr:last-child td { border-bottom: none; }
 .page-info { font-size: 13px; font-weight: 600; color: #374151; padding: 0 6px; }
 .page-sep { color: #9ca3af; margin: 0 3px; }
 
-/* MODAL */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15,23,42,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  backdrop-filter: blur(3px);
-}
-.modal {
-  width: 860px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 48px);
-  background: white;
-  border-radius: 22px;
-  box-shadow: 0 40px 100px rgba(15,23,42,0.25);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.modal-header {
-  padding: 18px 22px;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-shrink: 0;
-}
-.modal-title-group { display: flex; flex-direction: column; gap: 4px; }
-.modal-phone-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(220,38,38,0.08);
-  border: 1px solid rgba(220,38,38,0.2);
-  color: #dc2626;
-  font-family: monospace;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 5px 11px;
-  border-radius: 10px;
-  width: fit-content;
-  margin-bottom: 4px;
-}
-.modal-title-group h3 { margin: 0; font-size: 16px; color: #111827; }
-.modal-subtitle { margin: 0; color: #6b7280; font-size: 12px; }
-
-.close-btn {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  padding: 7px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.close-btn:hover { background: #e5e7eb; }
-
-.modal-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-.modal-col { display: flex; flex-direction: column; min-height: 0; padding: 18px 20px; }
-.modal-col-list { border-right: 1px solid #e5e7eb; }
-
-.search-bar-wrapper { position: relative; margin-bottom: 10px; }
-.search-icon {
-  position: absolute; left: 11px; top: 50%;
-  transform: translateY(-50%); color: #9ca3af; pointer-events: none;
-}
-.search-bar {
-  width: 100%;
-  padding: 9px 34px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  font-size: 13px;
-  background: #f9fafb;
-  box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.search-bar:focus {
-  outline: none; background: white;
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
-}
-.search-clear {
-  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  background: #e5e7eb; color: #6b7280; padding: 4px; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; cursor: pointer; border: none;
-}
-.search-clear:hover { background: #d1d5db; }
-
-.type-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-.type-tab {
-  background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb;
-  padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 5px; flex: 1;
-  justify-content: center; cursor: pointer; transition: background 0.12s;
-}
-.type-tab:hover { background: #e5e7eb; }
-.type-tab.active {
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white; border-color: transparent;
-}
-
-.subscriber-list-scroll {
-  flex: 1; overflow-y: auto; min-height: 0;
-  border: 1px solid #e5e7eb; border-radius: 12px;
-}
-.subscriber-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; cursor: pointer;
-  border-bottom: 1px solid #f3f4f6; transition: background 0.12s;
-}
-.subscriber-row:last-child { border-bottom: none; }
-.subscriber-row:hover { background: #fafafa; }
-.subscriber-row.selected { background: rgba(220,38,38,0.04); }
-
-.subscriber-avatar {
-  width: 32px; height: 32px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.avatar-blue { background: rgba(37,99,235,0.1); color: #2563eb; }
-.avatar-red { background: rgba(220,38,38,0.1); color: #dc2626; }
-
-.subscriber-info { flex: 1; min-width: 0; }
-.subscriber-info strong { font-size: 13px; color: #111827; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.subscriber-meta { color: #9ca3af; font-size: 11px; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-.meta-sep { color: #d1d5db; }
-.subscriber-check { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; color: #dc2626; flex-shrink: 0; }
-
-.sub-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 20px; gap: 10px; color: #9ca3af; font-size: 13px; }
-.spinner { width: 22px; height: 22px; border: 2px solid #e5e7eb; border-top-color: #dc2626; border-radius: 50%; animation: spin 0.7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.sub-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 20px; gap: 8px; color: #9ca3af; text-align: center; }
-.sub-empty p { margin: 0; font-size: 13px; line-height: 1.5; }
-.create-link-inline { margin-top: 4px; color: #dc2626; font-size: 12px; font-weight: 700; text-decoration: none; }
-.create-link-inline:hover { text-decoration: underline; }
-
-.selected-subscriber-card {
-  background: #f9fafb; border: 1px solid #e5e7eb;
-  border-radius: 14px; padding: 14px; margin-bottom: 14px;
-}
-.selected-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.selected-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; }
-.deselect-btn {
-  background: none; color: #dc2626; padding: 2px 6px; font-size: 11px; font-weight: 600;
-  border-radius: 6px; border: 1px solid rgba(220,38,38,0.3); cursor: pointer;
-}
-.deselect-btn:hover { background: rgba(220,38,38,0.06); }
-.selected-name { font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 10px; }
-.selected-meta-grid { display: flex; flex-direction: column; gap: 7px; }
-.selected-meta-item { display: flex; justify-content: space-between; align-items: center; }
-.meta-key { font-size: 11px; color: #9ca3af; font-weight: 600; }
-.meta-val { font-size: 12px; color: #374151; font-weight: 600; }
-
-.no-selection-placeholder {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #d1d5db; text-align: center; gap: 10px;
-  border: 2px dashed #e5e7eb; border-radius: 14px; padding: 28px; margin-bottom: 14px;
-}
-.no-selection-placeholder p { margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.6; }
-
-.note-field { margin-bottom: 12px; }
-.note-field label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
-.optional { font-weight: 400; color: #9ca3af; text-transform: none; letter-spacing: 0; }
-.note-field textarea { width: 100%; min-height: 68px; resize: vertical; box-sizing: border-box; font-size: 13px; border-radius: 10px; border: 1px solid #d1d5db; padding: 9px 11px; }
-
-.create-subscriber-link {
-  display: inline-flex; align-items: center; gap: 6px;
-  color: #6b7280; font-size: 12px; font-weight: 600; text-decoration: none;
-  border: 1px dashed #d1d5db; border-radius: 10px; padding: 7px 11px; transition: 0.15s;
-}
-.create-subscriber-link:hover { color: #dc2626; border-color: rgba(220,38,38,0.4); background: rgba(220,38,38,0.04); }
-
-.modal-footer {
-  padding: 14px 22px; border-top: 1px solid #e5e7eb;
-  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 10px;
-}
-.footer-actions { display: flex; gap: 8px; margin-left: auto; }
-.error { color: #dc2626; font-size: 13px; margin: 0; }
-
 @media (max-width: 1100px) {
   .filters { grid-template-columns: repeat(2, 1fr); }
   .field.search { grid-column: span 2; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 800px) {
-  .modal-body { grid-template-columns: 1fr; overflow-y: auto; }
-  .modal-col-list { border-right: none; border-bottom: 1px solid #e5e7eb; max-height: 320px; }
 }
 @media (max-width: 720px) {
   .filters { grid-template-columns: 1fr; }

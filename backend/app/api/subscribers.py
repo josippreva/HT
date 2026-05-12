@@ -17,8 +17,10 @@ def subscriber_to_dict(subscriber: Subscriber, phone_numbers: list[str] | None =
         "last_name": subscriber.last_name,
         "company_name": subscriber.company_name,
         "jmbg": subscriber.jmbg,
+        "company_id_number": subscriber.company_id_number,
         "address": subscriber.address,
         "city_id": subscriber.city_id,
+        "city_name": subscriber.city.name if subscriber.city else None,
         "postal_code_id": subscriber.postal_code_id,
         "contact_phone": subscriber.contact_phone,
         "email": subscriber.email,
@@ -142,7 +144,7 @@ def update_subscriber(
     if not subscriber:
         raise HTTPException(status_code=404, detail="Pretplatnik nije pronađen")
 
-    for key, value in data.model_dump().items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(subscriber, key, value)
 
     db.commit()

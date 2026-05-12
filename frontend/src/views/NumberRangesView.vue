@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="page-header">
-      <h1>Rasponi</h1>
+      <h1><i class="ti ti-list-numbers"></i> Rasponi</h1>
       <p>Interna dodjela RAK blokova na lokacije i generiranje fiksnih brojeva.</p>
     </div>
 
@@ -75,7 +75,9 @@
         </div>
 
         <div class="actions full">
-          <button type="submit" class="btn-primary">Spremi raspon</button>
+          
+          <button type="submit" class="btn-primary">            <i class="ti ti-device-floppy"></i>
+Spremi raspon</button>
         </div>
       </form>
 
@@ -83,7 +85,6 @@
       <p v-if="success" class="success">{{ success }}</p>
     </section>
 
-    <!-- Filteri -->
     <section class="panel">
       <div class="filters-top">
         <div class="field">
@@ -188,17 +189,14 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import api from "../api/client";
 
-// Form refs
 const rakBlocks = ref([]);
 const allLocations = ref([]);
 const ranges = ref([]);
 
-// Form cascade
 const citiesForRegion = ref([]);
 const locationsForCity = ref([]);
 const devicesForLocation = ref([]);
 
-// Filter cascade
 const entities = ref([]);
 const filterRegions = ref([]);
 const filterCities = ref([]);
@@ -226,7 +224,6 @@ const filters = reactive({
   location_id: "",
 });
 
-// Clientside — samo search i generated, ostalo ide na backend
 const filteredRanges = computed(() => {
   return ranges.value.filter((r) => {
     if (filters.search && !r.name?.toLowerCase().includes(filters.search.toLowerCase())) return false;
@@ -238,8 +235,6 @@ const filteredRanges = computed(() => {
 const selectedBlock = computed(() =>
   rakBlocks.value.find((b) => String(b.id) === String(form.rak_block_id))
 );
-
-// ── Load functions ──────────────────────────────────────
 
 async function loadRakBlocks() {
   const response = await api.get("/rak-number-blocks");
@@ -271,8 +266,6 @@ async function loadRanges() {
     loading.value = false;
   }
 }
-
-// ── Form cascade ────────────────────────────────────────
 
 async function onRakBlockChange() {
   form.city_id = ""; form.location_id = ""; form.device_id = "";
@@ -322,8 +315,6 @@ async function onLocationChange() {
   devicesForLocation.value = response.data;
 }
 
-// ── Filter cascade ──────────────────────────────────────
-
 async function onFilterEntityChange() {
   filters.region_id = "";
   filters.city_id = "";
@@ -364,8 +355,6 @@ function onFilterCityChange() {
 async function onFilterLocationChange() {
   await loadRanges();
 }
-
-// ── Submit ──────────────────────────────────────────────
 
 async function createRange() {
   error.value = ""; success.value = "";
@@ -410,8 +399,23 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
+
+* { font-family: 'Geist', sans-serif; }
+
 .page-header { margin-bottom: 20px; }
-.page-header h1 { margin: 0; font-size: 28px; color: #111827; }
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #111827;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+.page-header h1 i { font-size: 26px; color: #1B4FD8; }
 .page-header p { margin-top: 5px; color: #6b7280; font-size: 14px; }
 
 .panel {
@@ -470,10 +474,11 @@ input, select {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 select:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
+
 input:focus, select:focus {
   outline: none;
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+  border-color: #1B4FD8;
+  box-shadow: 0 0 0 3px rgba(27, 79, 216, 0.08);
 }
 
 .field-hint { font-size: 11px; color: #f59e0b; margin-top: 4px; }
@@ -503,7 +508,7 @@ input:focus, select:focus {
 .spinner-inline {
   width: 14px; height: 14px;
   border: 2px solid #e5e7eb;
-  border-top-color: #dc2626;
+  border-top-color: #1B4FD8;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -530,14 +535,52 @@ input:focus, select:focus {
 .filters-bottom select { padding: 8px 10px; font-size: 12px; }
 
 .btn-primary {
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  background: #EDF4FF;
+  color: #1B4FD8;
+
+  border: 1px solid #7FB3FF;
+  border-radius: 9px;
+
+  padding: 8px 14px;
+
   cursor: pointer;
-  font-weight: 700;
-  font-size: 13px;
+
+  font-weight: 600;
+  font-size: 12.5px;
+  line-height: 1;
+
+  font-family: 'Geist', sans-serif;
+
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.12s,
+    box-shadow 0.15s;
+}
+
+.btn-primary:hover {
+  background: #1B4FD8;
+  color: #FFFFFF;
+
+  border-color: transparent;
+
+  box-shadow:
+    0 4px 12px rgba(27, 79, 216, 0.22),
+    0 2px 6px rgba(124, 58, 237, 0.18);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary i {
+  font-size: 14px;
 }
 
 .error { color: #dc2626; margin-top: 10px; font-size: 13px; }

@@ -1,46 +1,71 @@
 <template>
   <div class="layout">
     <aside class="sidebar">
-      <div class="sidebar-glow glow-red"></div>
-      <div class="sidebar-glow glow-blue"></div>
 
       <div class="brand">
         <div class="logo">HT</div>
-        <div>
+        <div class="brand-text">
           <h2>HT Mostar</h2>
           <p>Upravljanje numeracijom</p>
         </div>
       </div>
 
       <nav class="nav">
-        <RouterLink to="/dashboard">Pregled sustava</RouterLink>
-        <RouterLink to="/cities">Gradovi/općine</RouterLink>
-        <RouterLink to="/locations">Lokacije</RouterLink>
-        <RouterLink to="/devices">Uređaji</RouterLink>
-        <RouterLink to="/number-ranges">Rasponi</RouterLink>
-        <RouterLink to="/phone-numbers">Brojevi</RouterLink>
-        <RouterLink to="/subscribers">Pretplatnici</RouterLink>
+        <div class="nav-section">Pregled</div>
+        <RouterLink to="/dashboard">
+          <i class="ti ti-layout-dashboard"></i>
+          Pregled sustava
+        </RouterLink>
+
+        <div class="nav-section">Infrastruktura</div>
+        <RouterLink to="/cities">
+          <i class="ti ti-building"></i>
+          Gradovi / općine
+        </RouterLink>
+        <RouterLink to="/locations">
+          <i class="ti ti-map-pin"></i>
+          Lokacije
+        </RouterLink>
+        <RouterLink to="/devices">
+          <i class="ti ti-cpu"></i>
+          Uređaji
+        </RouterLink>
+
+        <div class="nav-section">Numeracija</div>
+        <RouterLink to="/number-ranges">
+          <i class="ti ti-list-numbers"></i>
+          Rasponi
+        </RouterLink>
+        <RouterLink to="/phone-numbers">
+          <i class="ti ti-phone"></i>
+          Brojevi
+        </RouterLink>
+        <RouterLink to="/subscribers">
+          <i class="ti ti-users"></i>
+          Pretplatnici
+        </RouterLink>
       </nav>
 
       <div class="sb-bottom">
         <div class="user-row">
           <div class="avatar">
-  {{
-    (authStore.user?.username || authStore.user?.email || "A")
-      .charAt(0)
-      .toUpperCase()
-  }}
-</div>
-
-
-
+            {{
+              (authStore.user?.username || authStore.user?.email || "A")
+                .charAt(0)
+                .toUpperCase()
+            }}
+          </div>
           <div class="user-info">
-            <p> {{ authStore.user?.full_name || authStore.user?.email || "IME/EMAIL" }}</p>
-            <span>{{ authStore.user?.role ?? 'a' }}</span>
+            <p>{{ authStore.user?.full_name || authStore.user?.email || "Korisnik" }}</p>
+            <span>{{ authStore.user?.role ?? "—" }}</span>
           </div>
         </div>
-        <button class="logout" @click="logout">Odjava</button>
+        <button class="logout" @click="logout">
+          <i class="ti ti-logout"></i>
+          Odjava
+        </button>
       </div>
+
     </aside>
 
     <main class="main">
@@ -52,187 +77,215 @@
 <script setup>
 import { RouterLink, RouterView } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+
 const authStore = useAuthStore();
+
 function logout() {
   authStore.logout();
 }
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
+
 .layout {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-  font-family: Arial, sans-serif;
+  background: #F3F4F6;
+  font-family: 'Geist', sans-serif;
 }
 
-/* SIDEBAR */
+/* ── Sidebar ── */
 .sidebar {
-  position: relative;
-  width: 270px;
-  min-width: 270px;
-  padding: 26px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border-right: 1px solid #e5e7eb;
+  width: 268px;
+  min-width: 268px;
+  height: 100vh;
+  background: #FFFFFF;
+  border-right: 1px solid #E5E7EB;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  height: 100vh;
+  padding: 24px 16px;
+  box-sizing: border-box;
 }
 
-.sidebar-glow {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(50px);
-  opacity: 0.18;
-  pointer-events: none;
-}
-.glow-red {
-  width: 220px;
-  height: 220px;
-  background: #ef4444;
-  top: -50px;
-  left: -60px;
-}
-.glow-blue {
-  width: 220px;
-  height: 220px;
-  background: #2563eb;
-  bottom: -60px;
-  right: -80px;
-}
-
-/* BRAND */
+/* ── Brand ── */
 .brand {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 38px;
-  z-index: 2;
+  padding: 12px 6px 26px;
+  border-bottom: 1px solid #F3F4F6;
+  margin-bottom: 6px;
   flex-shrink: 0;
 }
+
 .logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white;
-  font-weight: 900;
-  font-size: 18px;
+  width: 54px;
+  height: 54px;
+  background: #1B4FD8;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.18);
   flex-shrink: 0;
-}
-.brand h2 {
-  margin: 0;
-  font-size: 20px;
-  color: #111827;
-}
-.brand p {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #6b7280;
+  letter-spacing: 0.5px;
 }
 
-/* NAV */
+.brand-text h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.3px;
+}
+
+.brand-text p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #374151;
+  font-weight: 400;
+}
+
+/* ── Nav ── */
 .nav {
-  position: relative;
-  padding: 24px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  z-index: 2;
-  flex-shrink: 0;
-}
-.nav a {
-  text-decoration: none;
-  color: #374151;
-  padding: 12px 16px;
-  border-radius: 14px;
-  font-weight: 600;
-  transition: 0.2s;
-}
-.nav a:hover {
-  background: #f3f4f6;
-}
-.nav a.router-link-active {
-  background: linear-gradient(140deg,rgb(37, 99, 235), rgb(205, 38, 38,0.9));
-  color: white;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+  gap: 2px;
+  overflow-y: auto;
+  padding: 4px 0 8px;
 }
 
-/* ── Bottom section ──────────────────────────────────── */
+.nav-section {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9CA3AF;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  padding: 16px 10px 6px;
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+  transition: background 0.1s, color 0.1s;
+}
+
+.nav a i {
+  font-size: 18px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.nav a:hover {
+  background: #F9FAFB;
+  color: #374151;
+}
+
+.nav a.router-link-active {
+  background: #EFF6FF;
+  color: #1B4FD8;
+  font-weight: 600;
+}
+
+.nav a.router-link-active i {
+  opacity: 1;
+}
+
+/* ── Bottom ── */
 .sb-bottom {
-  position: relative;
-  z-index: 2;
-  margin-top: auto;
-  padding-bottom: 35px;
+  flex-shrink: 0;
+  padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .user-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 4px 12px;
+  gap: 11px;
+  padding: 4px 6px;
 }
 
 .avatar {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #e0e7ff, #dbeafe);
-  border: 1px solid #c7d2fe;
-  color: #3730a3;
-  font-size: 12px;
+  border-radius: 9px;
+  background: #EFF6FF;
+  color: #1B4FD8;
+  font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  letter-spacing: 0.5px;
 }
 
 .user-info p {
   margin: 0;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
 }
 
 .user-info span {
   font-size: 11px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #6B7280;
+  text-transform: capitalize;
 }
 
 .logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  border: 1px solid rgba(220,38,38,0.2);
-  border-radius: 10px;
   padding: 10px 14px;
-  cursor: pointer;
-  font-weight: 600;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 9px;
   font-size: 13px;
-  color: #f7f7fa;
-  background: linear-gradient(135deg, #8726cd, #2563eb);
-  transition: background 0.15s;
-}
-.logout:hover {
-  background: linear-gradient(135deg, #8726cd, #cd2626);
-  transform: none;
-  box-shadow: none;
+  font-weight: 500;
+  color: #DC2626;
+  cursor: pointer;
+  font-family: 'Geist', sans-serif;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 
-/* MAIN */
+.logout i {
+  font-size: 17px;
+}
+
+.logout:hover {
+  background:#DC2626;
+  color: #FFFF;
+  border-color: #FECACA;
+}
+
+/* ── Main ── */
 .main {
   flex: 1;
-  padding: 34px;
-  overflow-y: auto;
   height: 100vh;
+  overflow-y: auto;
+  padding: 36px 40px;
+  background: #EDF4FF;
 }
 </style>

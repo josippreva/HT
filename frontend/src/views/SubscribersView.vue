@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="page-header">
-      <h1>Pretplatnici</h1>
+      <h1><i class="ti ti-users"></i> Pretplatnici</h1>
       <p>Pregled, unos i uređivanje pretplatnika s pripadajućim gradom i poštanskim brojem.</p>
     </div>
 
@@ -14,10 +14,26 @@
           <label>Tip pretplatnika</label>
           <div class="type-toggle">
             <button type="button" :class="['toggle-btn', form.subscriber_type === 'physical_person' ? 'active' : '']" @click="form.subscriber_type = 'physical_person'">
-              👤 Fizička osoba
+               
+               
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                
+                 Fizička osoba
+
             </button>
+
+            
             <button type="button" :class="['toggle-btn', form.subscriber_type === 'legal_entity' ? 'active' : '']" @click="form.subscriber_type = 'legal_entity'">
-              🏢 Pravna osoba
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <rect x="2" y="7" width="20" height="14" rx="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg> 
+              
+              Pravna osoba
+            
             </button>
           </div>
         </div>
@@ -40,9 +56,14 @@
           </div>
         </template>
 
-        <div class="field">
+        <div v-if="form.subscriber_type === 'physical_person'" class="field">
           <label>JMBG</label>
           <input v-model="form.jmbg" type="text" maxlength="13" placeholder="13 znamenki" />
+        </div>
+
+        <div v-else class="field">
+          <label>ID broj firme</label>
+          <input v-model="form.company_id_number" type="text" placeholder="ID / porezni broj firme" />
         </div>
 
         <div class="field">
@@ -100,7 +121,8 @@
         </div>
 
         <div class="actions full">
-          <button type="submit" class="btn-primary">
+          <button type="submit" class="btn-primary">            <i class="ti ti-device-floppy"></i>
+
             {{ editingId ? "Spremi izmjene" : "Spremi pretplatnika" }}
           </button>
           <button v-if="editingId" type="button" class="btn-secondary" @click="resetForm">
@@ -113,7 +135,6 @@
       <p v-if="success" class="success">{{ success }}</p>
     </section>
 
-    <!-- Filteri -->
     <section class="panel">
       <div class="filters-top">
         <div class="field">
@@ -167,7 +188,6 @@
       </div>
     </section>
 
-    <!-- Tabela -->
     <section class="panel">
       <div class="panel-header">
         <h2>Popis pretplatnika</h2>
@@ -181,7 +201,8 @@
           <tr>
             <th>Naziv</th>
             <th>Tip</th>
-            <th>JMBG</th>
+            <th>JMBG / IDENTIFIKATOR</th>
+            
             <th>Dodijeljeni broj</th>
             <th>Kontakt</th>
             <th>Adresa</th>
@@ -195,11 +216,26 @@
               <div class="sub-id">ID: {{ subscriber.id }}</div>
             </td>
             <td>
-              <span class="badge" :class="subscriber.subscriber_type === 'legal_entity' ? 'badge-blue' : 'badge-red'">
-                {{ subscriber.subscriber_type === "legal_entity" ? "Pravna osoba" : "Fizička osoba" }}
+              <span class="subscriber-type-badge" :class="subscriber.subscriber_type === 'legal_entity' ? 'legal' : 'physical'" >
+                <template v-if="subscriber.subscriber_type === 'physical_person'">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Fizička osoba
+                </template>
+
+                <template v-else>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <rect x="2" y="7" width="20" height="14" rx="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  Pravna osoba
+                </template>
               </span>
+
             </td>
-            <td>{{ subscriber.jmbg || "—" }}</td>
+           <td>{{ subscriber.subscriber_type === "legal_entity" ? subscriber.company_id_number || "—" : subscriber.jmbg || "—" }}</td>
             <td>
               <span v-if="subscriber.assigned_phone_numbers.length">
                 {{ subscriber.assigned_phone_numbers.map(num => formatPhoneNumber(num)).join(", ") }}
@@ -210,7 +246,10 @@
               <div>{{ subscriber.contact_phone || "—" }}</div>
               <div class="muted">{{ subscriber.email || "" }}</div>
             </td>
-            <td>{{ subscriber.address || "—" }}</td>
+            <td>
+             <div>{{ subscriber.address || "—" }}</div>
+              <div class="muted">{{ subscriber.city_name || "" }}</div>
+            </td>
             <td class="table-actions">
               <button class="small-btn" @click="startEdit(subscriber)">Uredi</button>
               <button class="small-btn danger" @click="deleteSubscriber(subscriber)">Obriši</button>
@@ -256,6 +295,7 @@ const form = reactive({
   last_name: "",
   company_name: "",
   jmbg: "",
+  company_id_number: "",
   entity_id: "",
   region_id: "",
   city_id: "",
@@ -282,7 +322,8 @@ function buildPayload() {
     first_name: form.subscriber_type === "physical_person" ? form.first_name || null : null,
     last_name: form.subscriber_type === "physical_person" ? form.last_name || null : null,
     company_name: form.subscriber_type === "legal_entity" ? form.company_name || null : null,
-    jmbg: form.jmbg || null,
+    jmbg: form.subscriber_type === "physical_person" ? form.jmbg || null : null,
+    company_id_number: form.subscriber_type === "legal_entity" ? form.company_id_number || null : null,
     city_id: form.city_id ? Number(form.city_id) : null,
     postal_code_id: form.postal_code_id ? Number(form.postal_code_id) : null,
     address: form.address || null,
@@ -413,9 +454,17 @@ async function saveSubscriber() {
 
 function formatPhoneNumber(value) {
   if (!value) return "";
+
   const digits = String(value).replace(/\D/g, "");
-  if (digits.length === 8) return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
-  if (digits.length === 9) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+
+  if (digits.length === 8) {
+    return `+387 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  }
+
+  if (digits.length === 9) {
+    return `+387 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  }
+
   return value;
 }
 
@@ -426,6 +475,7 @@ async function startEdit(subscriber) {
   form.last_name = subscriber.last_name || "";
   form.company_name = subscriber.company_name || "";
   form.jmbg = subscriber.jmbg || "";
+  form.company_id_number = subscriber.company_id_number || "";
   form.address = subscriber.address || "";
   form.contact_phone = subscriber.contact_phone || "";
   form.email = subscriber.email || "";
@@ -466,6 +516,7 @@ function resetForm() {
   form.last_name = "";
   form.company_name = "";
   form.jmbg = "";
+  form.company_id_number = "";
   form.entity_id = "";
   form.region_id = "";
   form.city_id = "";
@@ -501,8 +552,23 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
+
+* { font-family: 'Geist', sans-serif; }
+
 .page-header { margin-bottom: 20px; }
-.page-header h1 { margin: 0; font-size: 28px; color: #111827; }
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #111827;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+.page-header h1 i { font-size: 26px; color: #1B4FD8; }
 .page-header p { margin-top: 5px; color: #6b7280; font-size: 14px; }
 
 .panel {
@@ -548,24 +614,55 @@ label {
   align-items: center;
 }
 
-.type-toggle { display: flex; gap: 8px; }
+.type-toggle {
+  display: flex;
+  gap: 8px;
+}
+
 .toggle-btn {
   flex: 1;
-  background: #f9fafb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: #FFFFFF;
   color: #374151;
-  border: 1.5px solid #e5e7eb;
-  padding: 9px 14px;
+
+  border: 1px solid #E5E7EB;
   border-radius: 12px;
+
+  padding: 11px 14px;
+
   cursor: pointer;
+
   font-weight: 600;
   font-size: 13px;
-  transition: all 0.15s;
+
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s,
+    transform 0.12s;
 }
+
+.toggle-btn:hover {
+  background: #EDF4FF;
+  color: #1B4FD8;
+  border-color: #7FB3FF;
+}
+
 .toggle-btn.active {
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white;
-  border-color: transparent;
+  background: #EFF6FF;
+  color: #1B4FD8;
+  border-color: #93C5FD;
 }
+
+.toggle-btn:active {
+  transform: scale(0.98);
+}
+
 
 input, select, textarea {
   border: 1px solid #d1d5db;
@@ -578,34 +675,97 @@ input, select, textarea {
 }
 textarea { min-height: 68px; }
 select:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
+
+/* Focus usklađen s plavom bojom brenda umjesto jarke crvene */
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+  border-color: #1B4FD8;
+  box-shadow: 0 0 0 3px rgba(27, 79, 216, 0.08);
 }
 
 .actions.full { grid-column: span 3; display: flex; gap: 8px; padding-top: 2px; }
+
 .btn-primary {
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  background: #EDF4FF;
+  color: #1B4FD8;
+
+  border: 1px solid #7FB3FF;
+  border-radius: 9px;
+
+  padding: 8px 14px;
+
   cursor: pointer;
-  font-weight: 700;
-  font-size: 13px;
-}
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  padding: 10px 18px;
-  border-radius: 10px;
-  cursor: pointer;
+
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12.5px;
+  line-height: 1;
+
+  font-family: 'Geist', sans-serif;
+
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.12s,
+    box-shadow 0.15s;
 }
 
+.btn-primary:hover {
+  background: #1B4FD8;
+  color: #FFFFFF;
+
+  border-color: transparent;
+
+  box-shadow:
+    0 4px 12px rgba(27, 79, 216, 0.22),
+    0 2px 6px rgba(124, 58, 237, 0.18);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary i {
+  font-size: 14px;
+}
+
+/* ── CANCEL BUTTON ── */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  background: #FFFFFF;
+  color: #374151;
+
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+
+  padding: 10px 16px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+  font-size: 13px;
+
+  font-family: 'Geist', sans-serif;
+
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+
+.btn-secondary:hover {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+}
 .error { color: #dc2626; margin-top: 10px; font-size: 13px; }
 .success { color: #16a34a; margin-top: 10px; font-size: 13px; }
 
@@ -673,16 +833,49 @@ td {
 tr:last-child td { border-bottom: none; }
 .table-actions { display: flex; gap: 6px; }
 
-.badge {
+.subscriber-type-badge {
   display: inline-flex;
-  padding: 3px 9px;
-  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 8px 6px;
+
+  border-radius: 6px;
+
   font-size: 11px;
   font-weight: 700;
-}
-.badge-red { background: rgba(220,38,38,0.1); color: #dc2626; }
-.badge-blue { background: rgba(37,99,235,0.1); color: #2563eb; }
+  letter-spacing: 0.01em;
 
+  border: 1px solid transparent;
+
+  white-space: nowrap;
+}
+
+.subscriber-type-badge svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* Fizička osoba */
+.subscriber-type-badge.physical {
+  background: #EDF4FF;
+  color: #1B4FD8;
+  border-color: #BFDBFE;
+}
+
+/* Pravna osoba */
+.subscriber-type-badge.legal {
+  background: #E5E7EB;
+  color: #111827;
+  border-color: #D1D5DB;
+}
+
+td .subscriber-type-badge {
+  min-width: 88px;
+}
+/* Mali gumbi u tablici (Tvoj originalni dizajn) */
 .small-btn {
   background: #f3f4f6;
   color: #374151;

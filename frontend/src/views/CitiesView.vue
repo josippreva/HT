@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <div>
-        <h1>Gradovi / općine</h1>
+        <h1><i class="ti ti-building"></i> Gradovi / općine</h1>
         <p>Pregled gradova i općina s pozivnim i poštanskim brojevima.</p>
       </div>
     </div>
@@ -12,10 +12,10 @@
         <div class="field search-field">
           <label>Pretraga</label>
           <div class="search-wrap">
-            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <i class="ti ti-search search-icon"></i>
             <input v-model="filters.search" type="text" placeholder="Grad, regija, poštanski broj, pozivni..." />
             <button v-if="filters.search" class="clear-btn" @click="filters.search = ''">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <i class="ti ti-x"></i>
             </button>
           </div>
         </div>
@@ -102,7 +102,7 @@
 
             <tr v-if="filteredCities.length === 0">
               <td colspan="6" class="empty">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <i class="ti ti-search-off empty-icon"></i>
                 <p>Nema rezultata za odabrane filtere.</p>
               </td>
             </tr>
@@ -116,12 +116,12 @@
           </div>
           <button class="load-more-btn" @click="loadMore">
             Prikaži još {{ Math.min(perPage, filteredCities.length - visibleCount) }}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <i class="ti ti-chevron-down"></i>
           </button>
         </div>
 
         <div v-else-if="filteredCities.length > perPage" class="all-loaded">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <i class="ti ti-circle-check" style="color: #16a34a;"></i>
           Svi gradovi su prikazani
         </div>
       </template>
@@ -146,7 +146,6 @@ const visibleCount = ref(perPage);
 
 const filters = reactive({ search: "", entity_id: "", region_id: "" });
 
-// Reset visible count when filters change
 watch(filters, () => { visibleCount.value = perPage; });
 
 const enrichedCities = computed(() =>
@@ -261,110 +260,174 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 24px; }
-.page-header h1 { margin: 0; font-size: 28px; color: #111827; font-weight: 700; }
-.page-header p { margin-top: 5px; color: #6b7280; font-size: 14px; }
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
 
-.panel {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  padding: 22px 24px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+* { font-family: 'Geist', sans-serif; }
+
+/* ── Page Header ── */
+.page-header {
+  margin-bottom: 24px;
+}
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #111827;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+.page-header h1 i {
+  font-size: 26px;
+  color: #1B4FD8;
+}
+.page-header p {
+  margin-top: 5px;
+  color: #6B7280;
+  font-size: 14px;
 }
 
+/* ── Panel ── */
+.panel {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+/* ── Filters ── */
 .filters {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
   gap: 14px;
 }
 
-.field { display: flex; flex-direction: column; gap: 6px; }
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-label { font-size: 13px; color: #374151; font-weight: 600; }
+label {
+  font-size: 12px;
+  color: #374151;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 
 /* Search */
 .search-wrap { position: relative; }
 .search-icon {
-  position: absolute; left: 11px; top: 50%;
+  position: absolute;
+  left: 11px;
+  top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af; pointer-events: none;
+  color: #9CA3AF;
+  font-size: 15px;
+  pointer-events: none;
 }
-.search-wrap input { padding-left: 34px; padding-right: 32px; width: 100%; box-sizing: border-box; }
+.search-wrap input {
+  padding-left: 34px;
+  padding-right: 36px;
+  width: 100%;
+  box-sizing: border-box;
+}
 .clear-btn {
-  position: absolute; right: 8px; top: 50%;
+  position: absolute;
+  right: 8px;
+  top: 50%;
   transform: translateY(-50%);
-  background: #e5e7eb; color: #6b7280;
-  border: none; border-radius: 6px;
-  width: 22px; height: 22px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; padding: 0;
+  background: #E5E7EB;
+  color: #6B7280;
+  border: none;
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
 }
-.clear-btn:hover { background: #d1d5db; }
+.clear-btn:hover { background: #D1D5DB; }
 
 input, select {
-  border: 1px solid #e5e7eb;
-  border-radius: 11px;
-  padding: 10px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 9px 12px;
   font-size: 13px;
-  background: #fafafa;
+  background: #FAFAFA;
   color: #111827;
-  transition: 0.15s;
+  font-family: 'Geist', sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 input:focus, select:focus {
   outline: none;
-  border-color: #dc2626;
+  border-color: #DC2626;
   background: white;
-  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
 }
 
-/* Panel header */
+/* ── Panel Header ── */
 .panel-header {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
 }
-.panel-header h2 { margin: 0; font-size: 16px; font-weight: 700; color: #111827; }
+.panel-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
 
 .count-pill {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: #F3F4F6;
+  color: #6B7280;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
 }
 
-/* Table */
+/* ── Table ── */
 table { width: 100%; border-collapse: collapse; }
+
 th {
   text-align: left;
-  background: #f9fafb;
-  color: #9ca3af;
+  background: #F9FAFB;
+  color: #9CA3AF;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
   padding: 10px 12px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #F3F4F6;
 }
 th.center { text-align: center; }
+
 td {
   padding: 11px 12px;
-  border-bottom: 1px solid #f9fafb;
+  border-bottom: 1px solid #F9FAFB;
   font-size: 13px;
   color: #374151;
   vertical-align: top;
 }
 td.center { text-align: center; }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: #fafafa; }
+tr:hover td { background: #FAFAFA; }
 
-.city-name { font-weight: 600; color: #111827; font-size: 14px; }
-.city-id { font-size: 11px; color: #d1d5db; margin-top: 2px; font-family: monospace; }
+.city-name { font-weight: 600; color: #111827; font-size: 13.5px; }
+.city-id { font-size: 11px; color: #D1D5DB; margin-top: 2px; font-family: monospace; }
 
 .td-primary { font-weight: 500; color: #374151; }
-.td-secondary { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+.td-secondary { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
 
 .area-badge {
   display: inline-flex;
@@ -372,8 +435,9 @@ tr:hover td { background: #fafafa; }
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: rgba(220,38,38,0.1);
-  color: #991b1b;
+  background: rgba(220, 38, 38, 0.08);
+  color: #991B1B;
+  border: 1px solid rgba(220, 38, 38, 0.15);
   font-family: monospace;
 }
 
@@ -385,90 +449,110 @@ tr:hover td { background: #fafafa; }
   padding: 3px 9px;
   border-radius: 8px;
   font-size: 12px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #dbeafe;
+  background: #EFF6FF;
+  color: #1B4FD8;
+  border: 1px solid #DBEAFE;
 }
 .postal-code { font-family: monospace; font-weight: 600; }
-.postal-sep { color: #93c5fd; }
+.postal-sep { color: #93C5FD; }
 
 .num-badge {
   display: inline-flex;
-  min-width: 28px; height: 24px;
-  align-items: center; justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 700;
-  background: #f3f4f6;
+  background: #F3F4F6;
   color: #374151;
 }
 .num-badge.dark { background: #111827; color: white; }
-.num-badge.zero { background: #f9fafb; color: #d1d5db; }
+.num-badge.zero { background: #F9FAFB; color: #D1D5DB; }
 
-.muted { color: #d1d5db; font-size: 13px; }
+.muted { color: #D1D5DB; font-size: 13px; }
 
-/* Loading */
+/* ── Loading ── */
 .loading-state {
-  display: flex; align-items: center; justify-content: center;
-  gap: 10px; padding: 48px;
-  color: #9ca3af; font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px;
+  color: #9CA3AF;
+  font-size: 14px;
 }
 .spinner {
-  width: 20px; height: 20px;
-  border: 2px solid #f3f4f6;
-  border-top-color: #dc2626;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #E5E7EB;
+  border-top-color: #DC2626;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Empty */
+/* ── Empty ── */
 .empty {
   text-align: center;
   padding: 48px 20px;
-  color: #9ca3af;
+  color: #9CA3AF;
 }
-.empty svg { display: block; margin: 0 auto 10px; color: #d1d5db; }
+.empty-icon {
+  font-size: 32px;
+  color: #D1D5DB;
+  display: block;
+  margin: 0 auto 10px;
+}
 .empty p { margin: 0; font-size: 14px; }
 
-/* Load more */
+/* ── Load More ── */
 .load-more-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 18px 12px 4px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #F3F4F6;
   margin-top: 4px;
 }
-.load-more-info { font-size: 13px; color: #9ca3af; }
+.load-more-info { font-size: 13px; color: #9CA3AF; }
+
 .load-more-btn {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: white;
   color: #374151;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #E5E7EB;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 9px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  font-family: 'Geist', sans-serif;
   transition: 0.15s;
 }
+.load-more-btn i { font-size: 15px; }
 .load-more-btn:hover {
-  border-color: #dc2626;
-  color: #dc2626;
-  background: rgba(220,38,38,0.03);
+  border-color: #DC2626;
+  color: #DC2626;
+  background: rgba(220, 38, 38, 0.03);
 }
 
 .all-loaded {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 18px 12px 4px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #F3F4F6;
   margin-top: 4px;
   font-size: 13px;
-  color: #9ca3af;
+  color: #9CA3AF;
 }
-.all-loaded svg { color: #16a34a; }
 
+/* ── Responsive ── */
 @media (max-width: 900px) {
   .filters { grid-template-columns: 1fr 1fr; }
   .search-field { grid-column: span 2; }

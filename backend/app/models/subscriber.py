@@ -1,5 +1,5 @@
 from sqlalchemy import String, DateTime, Text, ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 
@@ -18,7 +18,7 @@ class Subscriber(Base):
 
     oib: Mapped[str | None] = mapped_column(String(20), nullable=True)
     jmbg: Mapped[str | None] = mapped_column(String(20), nullable=True)
-
+    company_id_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     city_id: Mapped[int | None] = mapped_column(
@@ -32,6 +32,9 @@ class Subscriber(Base):
         nullable=True,
         index=True,
     )
+
+
+    city = relationship("City")
 
     contact_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 

@@ -28,6 +28,13 @@ class PhoneNumber(Base):
         index=True,
     )
 
+    number_category: Mapped[str] = mapped_column(
+        String(30),
+        default="standard",
+        nullable=False,
+        index=True,
+    )
+
     status: Mapped[str] = mapped_column(
         String(30),
         default="slobodan",

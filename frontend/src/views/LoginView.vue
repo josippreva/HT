@@ -30,7 +30,12 @@
           required
         />
 
-        <button type="submit" :disabled="loading">
+        <button
+          class="btn-192"
+          type="submit"
+          :disabled="loading"
+        >
+          <i class="ti ti-login"></i>
           {{ loading ? "Prijava..." : "Prijavi se" }}
         </button>
       </form>
@@ -69,18 +74,21 @@ async function submitLogin() {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
+
 .login-page {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background:
-    radial-gradient(circle at top left, rgba(220,38,38,0.28) 0, transparent 32%),
+    radial-gradient(circle at top left, rgba(27, 79, 216, 0.34), transparent 32%),
     radial-gradient(circle at bottom right, rgba(37,99,235,0.22) 0, transparent 28%),
     linear-gradient(135deg, #ffffff 0%, #f8fafc 45%, #eef2ff 100%);
   position: relative;
   overflow: hidden;
-  font-family: Arial, sans-serif;
+  font-family: 'Geist', sans-serif;
 }
 
 .glow {
@@ -93,7 +101,7 @@ async function submitLogin() {
 .glow-1 {
   width: 280px;
   height: 280px;
-  background: #ef4444;
+  background: #1B4FD8;
   top: 8%;
   left: 12%;
 }
@@ -101,7 +109,7 @@ async function submitLogin() {
 .glow-2 {
   width: 320px;
   height: 320px;
-  background: #3b82f6;
+  background: #7C3AED;
   bottom: 8%;
   right: 12%;
 }
@@ -129,7 +137,7 @@ async function submitLogin() {
   width: 58px;
   height: 58px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #dc2626, #2563eb);
+  background: #1B4FD8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,6 +150,7 @@ async function submitLogin() {
 h1 {
   margin: 0;
   font-size: 26px;
+  color: #111827;
 }
 
 .brand p {
@@ -155,6 +164,7 @@ label {
   margin-bottom: 7px;
   font-size: 14px;
   color: #374151;
+  font-weight: 600;
 }
 
 input {
@@ -168,6 +178,8 @@ input {
   outline: none;
   font-size: 15px;
   transition: 0.2s;
+  box-sizing: border-box;
+  font-family: 'Geist', sans-serif;
 }
 
 input:focus {
@@ -175,27 +187,50 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
 }
 
-button {
+/* LOGIN BUTTON */
+.btn-192 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
   width: 100%;
-  margin-top: 8px;
-  padding: 14px;
-  border: none;
+  padding: 12px 14px;
+  background: #EDF4FF;
+  color: #1B4FD8;
+
+  border: 1px solid #7FB3FF;
   border-radius: 12px;
-  background: linear-gradient(135deg, #dc2626, #2563eb);
-  color: white;
-  font-weight: bold;
-  font-size: 15px;
+
+  font-size: 14px;
+  font-weight: 600;
+
   cursor: pointer;
-  transition: 0.2s;
+  font-family: 'Geist', sans-serif;
+
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s,
+    transform 0.12s;
 }
 
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(37,99,235,0.16);
+.btn-192 i {
+  font-size: 17px;
 }
 
-button:disabled {
-  opacity: 0.75;
+.btn-192:hover {
+  background: #1B4FD8;
+  color: #FFFF;
+  border-color: #7FB3FF;
+}
+
+.btn-192:active {
+  transform: scale(0.98);
+}
+
+.btn-192:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -203,5 +238,6 @@ button:disabled {
   margin-top: 16px;
   text-align: center;
   color: #dc2626;
+  font-size: 14px;
 }
 </style>
