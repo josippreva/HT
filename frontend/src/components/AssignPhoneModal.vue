@@ -225,6 +225,40 @@
             </div>
           </template>
 
+          <!-- PUBLIC / PRIVATE ID -->
+          <div class="identity-card">
+            <div class="section-label">Identitet broja</div>
+
+            <div class="field">
+              <label>Public ID</label>
+              <input
+                v-model="assignForm.public_id"
+                type="text"
+                placeholder="test"
+              />
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label>Private ID</label>
+                <input
+                  v-model="assignForm.private_id"
+                  type="text"
+                  placeholder="npr. test"
+                />
+              </div>
+
+              <div class="field">
+                <label>Domain</label>
+                <input
+                  v-model="assignForm.domain"
+                  type="text"
+                  placeholder="npr. operator.ba"
+                />
+              </div>
+            </div>
+          </div>
+
           <!-- NAPOMENA -->
           <div class="note-field">
             <label>
@@ -289,6 +323,9 @@ const subscriberFilters = reactive({
 
 const assignForm = reactive({
   subscriber_id: "",
+  public_id: "",
+  private_id: "",
+  domain: "",
   note: "",
 });
 
@@ -410,6 +447,9 @@ async function assignExistingSubscriber() {
   }
   await api.post(`/phone-numbers/${props.phone.id}/assign`, {
     subscriber_id: Number(assignForm.subscriber_id),
+    public_id: assignForm.public_id || null,
+    private_id: assignForm.private_id || null,
+    domain: assignForm.domain || null,
     note: assignForm.note || null,
   });
 }
@@ -452,6 +492,9 @@ console.log("postal_code_id:", newSubscriberForm.postal_code_id)
       email: newSubscriberForm.email || null,
       note: null,
     },
+    public_id: assignForm.public_id || null,
+    private_id: assignForm.private_id || null,
+    domain: assignForm.domain || null,
     note: assignForm.note || null,
   });
 }
@@ -877,11 +920,13 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   margin-bottom: 10px;
+  min-width: 0;
 }
 .field-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
+  width: 100%;
 }
 
 label {
@@ -895,24 +940,51 @@ label {
   align-items: center;
   gap: 5px;
 }
-input, select, textarea {
+input,
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+
   border: 1px solid #d1d5db;
   border-radius: 10px;
+
   padding: 8px 10px;
+
   font-size: 12px;
+
   background: white;
   color: #111827;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .input-disabled {
   background: #f9fafb !important;
   color: #9ca3af;
   cursor: not-allowed;
+}
+
+
+.identity-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 6px rgba(15,23,42,0.03);
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 7px;
+  margin-bottom: 12px;
 }
 
 /* NAPOMENA */
@@ -1067,6 +1139,12 @@ input:focus, select:focus, textarea:focus {
 
 .btn-secondary:active {
   transform: scale(0.98);
+}
+
+@media (max-width: 640px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 800px) {

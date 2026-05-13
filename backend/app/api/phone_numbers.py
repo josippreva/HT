@@ -351,6 +351,9 @@ def list_phone_numbers(
                 "assigned_at": phone.assigned_at,
                 "quarantine_at": phone.quarantine_at,
                 "note": phone.note,
+                "public_id": phone.public_id,
+                "private_id": phone.private_id,
+                "domain": phone.domain,
 
                 "entity_id": entity.id,
                 "entity_name": entity.name,
@@ -408,6 +411,9 @@ def get_phone_number(phone_number_id: int, db: Session = Depends(get_db)):
         "assigned_at": phone.assigned_at,
         "quarantine_at": phone.quarantine_at,
         "note": phone.note,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
         "location_name": location.name,
         "city_name": city.name,
         "range_start": number_range.range_start,
@@ -450,6 +456,9 @@ def assign_phone_number(
     phone.status = "zauzet"
     phone.assigned_at = datetime.now(timezone.utc)
     phone.quarantine_at = None
+    phone.public_id = data.public_id
+    phone.private_id = data.private_id
+    phone.domain = data.domain
     phone.note = data.note
 
     db.commit()
@@ -487,6 +496,9 @@ def assign_phone_number_with_new_subscriber(
     phone.status = "zauzet"
     phone.assigned_at = datetime.now(timezone.utc)
     phone.quarantine_at = None
+    phone.public_id = data.public_id
+    phone.private_id = data.private_id
+    phone.domain = data.domain
     phone.note = data.note
 
     db.commit()
@@ -517,6 +529,9 @@ def release_phone_number(
     phone.status = "slobodan"
     phone.assigned_at = None
     phone.quarantine_at = None
+    phone.public_id = None
+    phone.private_id = None
+    phone.domain = None
     phone.note = data.note
 
     db.commit()
@@ -540,6 +555,9 @@ def quarantine_phone_number(
     phone.status = "karantena"
     phone.assigned_at = None
     phone.quarantine_at = datetime.now(timezone.utc)
+    phone.public_id = None
+    phone.private_id = None
+    phone.domain = None
     phone.note = data.note
 
     db.commit()
@@ -559,6 +577,9 @@ def activate_phone_number(phone_number_id: int, db: Session = Depends(get_db)):
     phone.status = "slobodan"
     phone.assigned_at = None
     phone.quarantine_at = None
+    phone.public_id = None
+    phone.private_id = None
+    phone.domain = None
 
     db.commit()
     db.refresh(phone)

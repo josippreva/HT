@@ -65,5 +65,21 @@ class PhoneNumber(Base):
         onupdate=func.now(),
     )
 
+    public_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    private_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    domain: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+
     number_range = relationship("NumberRange")
     subscriber = relationship("Subscriber")
