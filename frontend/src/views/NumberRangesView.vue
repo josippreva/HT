@@ -170,10 +170,13 @@ Spremi raspon</button>
                 {{ range.generated ? "Generirano" : "Nije generirano" }}
               </span>
             </td>
-            <td class="table-actions">
+            <td>
+            <div class="table-actions">
               <button v-if="!range.generated" class="small-btn generate" @click="generateNumbers(range)">
+                
                 Generiraj
               </button>
+            </div>
             </td>
           </tr>
           <tr v-if="filteredRanges.length === 0">
@@ -608,7 +611,23 @@ td {
   vertical-align: middle;
 }
 tr:last-child td { border-bottom: none; }
-.table-actions { display: flex; gap: 6px; }
+.table-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+
+.small-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Geist', sans-serif;
+}
+.small-btn i {
+  font-size: 13px;
+}
 
 .badge {
   display: inline-flex;

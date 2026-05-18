@@ -6,7 +6,7 @@
     </div>
 
     <section class="panel">
-      <h2>{{ editingId ? "Uredi pretplatnika" : "Novi pretplatnik" }}</h2>
+      <h2>Novi pretplatnik</h2>
 
       <form class="form-grid" @submit.prevent="saveSubscriber">
 
@@ -14,26 +14,18 @@
           <label>Tip pretplatnika</label>
           <div class="type-toggle">
             <button type="button" :class="['toggle-btn', form.subscriber_type === 'physical_person' ? 'active' : '']" @click="form.subscriber_type = 'physical_person'">
-               
-               
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-                
-                 Fizička osoba
-
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Fizička osoba
             </button>
-
-            
             <button type="button" :class="['toggle-btn', form.subscriber_type === 'legal_entity' ? 'active' : '']" @click="form.subscriber_type = 'legal_entity'">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <rect x="2" y="7" width="20" height="14" rx="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-              </svg> 
-              
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
               Pravna osoba
-            
             </button>
           </div>
         </div>
@@ -60,7 +52,6 @@
           <label>JMBG</label>
           <input v-model="form.jmbg" type="text" maxlength="13" placeholder="13 znamenki" />
         </div>
-
         <div v-else class="field">
           <label>ID broj firme</label>
           <input v-model="form.company_id_number" type="text" placeholder="ID / porezni broj firme" />
@@ -106,7 +97,9 @@
           <label>Poštanski broj</label>
           <select v-model="form.postal_code_id" :disabled="!form.city_id">
             <option value="">Odaberi poštanski broj</option>
-            <option v-for="postal in postalCodes" :key="postal.id" :value="postal.id">{{ postal.postal_code }} — {{ postal.postal_name }}</option>
+            <option v-for="postal in postalCodes" :key="postal.id" :value="postal.id">
+              {{ postal.postal_code }} — {{ postal.postal_name }}
+            </option>
           </select>
         </div>
 
@@ -121,12 +114,9 @@
         </div>
 
         <div class="actions full">
-          <button type="submit" class="btn-primary">            <i class="ti ti-device-floppy"></i>
-
-            {{ editingId ? "Spremi izmjene" : "Spremi pretplatnika" }}
-          </button>
-          <button v-if="editingId" type="button" class="btn-secondary" @click="resetForm">
-            Odustani
+          <button type="submit" class="btn-primary">
+            <i class="ti ti-device-floppy"></i>
+            Spremi pretplatnika
           </button>
         </div>
       </form>
@@ -201,8 +191,7 @@
           <tr>
             <th>Naziv</th>
             <th>Tip</th>
-            <th>JMBG / IDENTIFIKATOR</th>
-            
+            <th>JMBG / Identifikator</th>
             <th>Dodijeljeni broj</th>
             <th>Kontakt</th>
             <th>Adresa</th>
@@ -216,7 +205,7 @@
               <div class="sub-id">ID: {{ subscriber.id }}</div>
             </td>
             <td>
-              <span class="subscriber-type-badge" :class="subscriber.subscriber_type === 'legal_entity' ? 'legal' : 'physical'" >
+              <span class="subscriber-type-badge" :class="subscriber.subscriber_type === 'legal_entity' ? 'legal' : 'physical'">
                 <template v-if="subscriber.subscriber_type === 'physical_person'">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -224,7 +213,6 @@
                   </svg>
                   Fizička osoba
                 </template>
-
                 <template v-else>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <rect x="2" y="7" width="20" height="14" rx="2"/>
@@ -233,11 +221,10 @@
                   Pravna osoba
                 </template>
               </span>
-
             </td>
-           <td>{{ subscriber.subscriber_type === "legal_entity" ? subscriber.company_id_number || "—" : subscriber.jmbg || "—" }}</td>
+            <td>{{ subscriber.subscriber_type === "legal_entity" ? subscriber.company_id_number || "—" : subscriber.jmbg || "—" }}</td>
             <td>
-              <span v-if="subscriber.assigned_phone_numbers.length">
+              <span v-if="subscriber.assigned_phone_numbers?.length">
                 {{ subscriber.assigned_phone_numbers.map(num => formatPhoneNumber(num)).join(", ") }}
               </span>
               <span v-else>—</span>
@@ -247,12 +234,18 @@
               <div class="muted">{{ subscriber.email || "" }}</div>
             </td>
             <td>
-             <div>{{ subscriber.address || "—" }}</div>
+              <div>{{ subscriber.address || "—" }}</div>
               <div class="muted">{{ subscriber.city_name || "" }}</div>
             </td>
-            <td class="table-actions">
-              <button class="small-btn" @click="startEdit(subscriber)">Uredi</button>
-              <button class="small-btn danger" @click="deleteSubscriber(subscriber)">Obriši</button>
+            <td>
+              <div class="table-actions">
+                <button class="small-btn" @click="startEdit(subscriber)">
+                  <i class="ti ti-pencil"></i> Uredi
+                </button>
+                <button class="small-btn danger" @click="deleteSubscriber(subscriber)">
+                  <i class="ti ti-trash"></i> Obriši
+                </button>
+              </div>
             </td>
           </tr>
           <tr v-if="filteredSubscribers.length === 0">
@@ -261,50 +254,47 @@
         </tbody>
       </table>
     </section>
+
+    <EditSubscribers
+      :open="editModal.open"
+      :subscriber="editModal.subscriber"
+      :entities="entities"
+      @close="closeEdit"
+      @saved="loadSubscribers"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import api from "../api/client";
+import EditSubscribers from "../components/EditSubscribers.vue";
 
 const subscribers = ref([]);
-const entities = ref([]);
-const regions = ref([]);
-const cities = ref([]);
+const entities    = ref([]);
+const regions     = ref([]);
+const cities      = ref([]);
 const postalCodes = ref([]);
-const locations = ref([]);
+const locations   = ref([]);
 
 const typeFilter = ref("");
-const loading = ref(false);
-const error = ref("");
-const success = ref("");
-const editingId = ref(null);
+const loading    = ref(false);
+const error      = ref("");
+const success    = ref("");
 
 const filters = reactive({
-  search: "",
-  entity_id: "",
-  region_id: "",
-  city_id: "",
-  location_id: "",
+  search: "", entity_id: "", region_id: "", city_id: "", location_id: "",
 });
 
 const form = reactive({
   subscriber_type: "physical_person",
-  first_name: "",
-  last_name: "",
-  company_name: "",
-  jmbg: "",
-  company_id_number: "",
-  entity_id: "",
-  region_id: "",
-  city_id: "",
-  postal_code_id: "",
-  address: "",
-  contact_phone: "",
-  email: "",
-  note: "",
+  first_name: "", last_name: "", company_name: "",
+  jmbg: "", company_id_number: "",
+  entity_id: "", region_id: "", city_id: "", postal_code_id: "",
+  address: "", contact_phone: "", email: "", note: "",
 });
+
+const editModal = reactive({ open: false, subscriber: null });
 
 const filteredSubscribers = computed(() => {
   if (!typeFilter.value) return subscribers.value;
@@ -314,6 +304,14 @@ const filteredSubscribers = computed(() => {
 function displayName(subscriber) {
   if (subscriber.subscriber_type === "legal_entity") return subscriber.company_name || "-";
   return `${subscriber.first_name || ""} ${subscriber.last_name || ""}`.trim() || "-";
+}
+
+function formatPhoneNumber(value) {
+  if (!value) return "";
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length === 8) return `+387 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  if (digits.length === 9) return `+387 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  return value;
 }
 
 function buildPayload() {
@@ -338,23 +336,38 @@ async function loadEntities() {
   entities.value = response.data;
 }
 
+async function loadRegions() {
+  const response = await api.get("/regions");
+  regions.value = response.data;
+}
+
+async function loadSubscribers() {
+  loading.value = true;
+  try {
+    const params = new URLSearchParams();
+    if (filters.search)      params.append("search",      filters.search);
+    if (filters.entity_id)   params.append("entity_id",   filters.entity_id);
+    if (filters.region_id)   params.append("region_id",   filters.region_id);
+    if (filters.city_id)     params.append("city_id",     filters.city_id);
+    if (filters.location_id) params.append("location_id", filters.location_id);
+    const response = await api.get(`/subscribers?${params.toString()}`);
+    subscribers.value = response.data;
+  } finally {
+    loading.value = false;
+  }
+}
+
 async function onEntityChange() {
-  form.region_id = "";
-  form.city_id = "";
-  form.postal_code_id = "";
-  regions.value = [];
-  cities.value = [];
-  postalCodes.value = [];
+  form.region_id = form.city_id = form.postal_code_id = "";
+  regions.value = cities.value = postalCodes.value = [];
   if (!form.entity_id) return;
   const response = await api.get(`/regions?entity_id=${form.entity_id}`);
   regions.value = response.data;
 }
 
 async function onRegionChange() {
-  form.city_id = "";
-  form.postal_code_id = "";
-  cities.value = [];
-  postalCodes.value = [];
+  form.city_id = form.postal_code_id = "";
+  cities.value = postalCodes.value = [];
   if (!form.region_id) return;
   const response = await api.get(`/cities?region_id=${form.region_id}`);
   cities.value = response.data;
@@ -368,34 +381,9 @@ async function onCityChange() {
   postalCodes.value = response.data;
 }
 
-async function loadSubscribers() {
-  loading.value = true;
-  try {
-    const params = new URLSearchParams();
-    if (filters.search) params.append("search", filters.search);
-    if (filters.entity_id) params.append("entity_id", filters.entity_id);
-    if (filters.region_id) params.append("region_id", filters.region_id);
-    if (filters.city_id) params.append("city_id", filters.city_id);
-    if (filters.location_id) params.append("location_id", filters.location_id);
-    const response = await api.get(`/subscribers?${params.toString()}`);
-    subscribers.value = response.data;
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function loadRegions() {
-  const response = await api.get("/regions");
-  regions.value = response.data;
-}
-
 async function onFilterEntityChange() {
-  filters.region_id = "";
-  filters.city_id = "";
-  filters.location_id = "";
-  regions.value = [];
-  cities.value = [];
-  locations.value = [];
+  filters.region_id = filters.city_id = filters.location_id = "";
+  regions.value = cities.value = locations.value = [];
   if (filters.entity_id) {
     const response = await api.get(`/regions?entity_id=${filters.entity_id}`);
     regions.value = response.data;
@@ -406,10 +394,8 @@ async function onFilterEntityChange() {
 }
 
 async function onFilterRegionChange() {
-  filters.city_id = "";
-  filters.location_id = "";
-  cities.value = [];
-  locations.value = [];
+  filters.city_id = filters.location_id = "";
+  cities.value = locations.value = [];
   if (filters.region_id) {
     const response = await api.get(`/cities?region_id=${filters.region_id}`);
     cities.value = response.data;
@@ -423,7 +409,7 @@ async function onFilterCityChange() {
   if (filters.city_id) {
     const response = await api.get("/locations");
     locations.value = response.data.filter(
-      (location) => Number(location.city_id) === Number(filters.city_id)
+      (l) => Number(l.city_id) === Number(filters.city_id)
     );
   }
   await loadSubscribers();
@@ -434,17 +420,10 @@ async function onFilterLocationChange() {
 }
 
 async function saveSubscriber() {
-  error.value = "";
-  success.value = "";
+  error.value = success.value = "";
   try {
-    const payload = buildPayload();
-    if (editingId.value) {
-      await api.put(`/subscribers/${editingId.value}`, payload);
-      success.value = "Pretplatnik je uspješno izmijenjen.";
-    } else {
-      await api.post("/subscribers", payload);
-      success.value = "Pretplatnik je uspješno spremljen.";
-    }
+    await api.post("/subscribers", buildPayload());
+    success.value = "Pretplatnik je uspješno spremljen.";
     resetForm();
     await loadSubscribers();
   } catch (err) {
@@ -452,89 +431,28 @@ async function saveSubscriber() {
   }
 }
 
-function formatPhoneNumber(value) {
-  if (!value) return "";
-
-  const digits = String(value).replace(/\D/g, "");
-
-  if (digits.length === 8) {
-    return `+387 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
-  }
-
-  if (digits.length === 9) {
-    return `+387 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-  }
-
-  return value;
+function startEdit(subscriber) {
+  editModal.subscriber = subscriber;
+  editModal.open = true;
 }
 
-async function startEdit(subscriber) {
-  editingId.value = subscriber.id;
-  form.subscriber_type = subscriber.subscriber_type;
-  form.first_name = subscriber.first_name || "";
-  form.last_name = subscriber.last_name || "";
-  form.company_name = subscriber.company_name || "";
-  form.jmbg = subscriber.jmbg || "";
-  form.company_id_number = subscriber.company_id_number || "";
-  form.address = subscriber.address || "";
-  form.contact_phone = subscriber.contact_phone || "";
-  form.email = subscriber.email || "";
-  form.note = subscriber.note || "";
-  form.entity_id = "";
-  form.region_id = "";
-  form.city_id = subscriber.city_id || "";
-  form.postal_code_id = subscriber.postal_code_id || "";
-  regions.value = [];
-  cities.value = [];
-  postalCodes.value = [];
-
-  if (subscriber.city_id) {
-    const citiesResponse = await api.get("/cities");
-    const city = citiesResponse.data.find((item) => Number(item.id) === Number(subscriber.city_id));
-    if (city) {
-      const regionsResponse = await api.get("/regions");
-      const region = regionsResponse.data.find((item) => Number(item.id) === Number(city.region_id));
-      if (region) {
-        form.entity_id = region.entity_id;
-        await onEntityChange();
-        form.region_id = region.id;
-        await onRegionChange();
-        form.city_id = city.id;
-        await onCityChange();
-        form.postal_code_id = subscriber.postal_code_id || "";
-      }
-    }
-  }
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
+function closeEdit() {
+  editModal.open = false;
+  editModal.subscriber = null;
 }
 
 function resetForm() {
-  editingId.value = null;
   form.subscriber_type = "physical_person";
-  form.first_name = "";
-  form.last_name = "";
-  form.company_name = "";
-  form.jmbg = "";
-  form.company_id_number = "";
-  form.entity_id = "";
-  form.region_id = "";
-  form.city_id = "";
-  form.postal_code_id = "";
-  form.address = "";
-  form.contact_phone = "";
-  form.email = "";
-  form.note = "";
-  regions.value = [];
-  cities.value = [];
-  postalCodes.value = [];
+  form.first_name = form.last_name = form.company_name = "";
+  form.jmbg = form.company_id_number = "";
+  form.entity_id = form.region_id = form.city_id = form.postal_code_id = "";
+  form.address = form.contact_phone = form.email = form.note = "";
+  regions.value = cities.value = postalCodes.value = [];
 }
 
 async function deleteSubscriber(subscriber) {
-  const confirmed = confirm(`Obrisati pretplatnika "${displayName(subscriber)}"?`);
-  if (!confirmed) return;
-  error.value = "";
-  success.value = "";
+  if (!confirm(`Obrisati pretplatnika "${displayName(subscriber)}"?`)) return;
+  error.value = success.value = "";
   try {
     await api.delete(`/subscribers/${subscriber.id}`);
     success.value = "Pretplatnik je obrisan.";
@@ -589,16 +507,7 @@ onMounted(async () => {
 .field { display: flex; flex-direction: column; }
 .field.full { grid-column: span 3; }
 .field.half { grid-column: span 2; }
-
-label {
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.optional { font-weight: 400; color: #9ca3af; font-size: 12px; text-transform: none; letter-spacing: 0; }
+.actions.full { grid-column: span 3; display: flex; gap: 8px; padding-top: 2px; }
 
 .section-label {
   grid-column: span 3;
@@ -614,55 +523,37 @@ label {
   align-items: center;
 }
 
-.type-toggle {
-  display: flex;
-  gap: 8px;
+label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
+.optional { font-weight: 400; color: #9ca3af; font-size: 12px; text-transform: none; letter-spacing: 0; }
 
+.type-toggle { display: flex; gap: 8px; }
 .toggle-btn {
   flex: 1;
-
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-
   background: #FFFFFF;
   color: #374151;
-
   border: 1px solid #E5E7EB;
   border-radius: 12px;
-
   padding: 11px 14px;
-
   cursor: pointer;
-
   font-weight: 600;
   font-size: 13px;
-
-  transition:
-    background 0.12s,
-    color 0.12s,
-    border-color 0.12s,
-    transform 0.12s;
+  font-family: 'Geist', sans-serif;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.12s;
 }
-
-.toggle-btn:hover {
-  background: #EDF4FF;
-  color: #1B4FD8;
-  border-color: #7FB3FF;
-}
-
-.toggle-btn.active {
-  background: #EFF6FF;
-  color: #1B4FD8;
-  border-color: #93C5FD;
-}
-
-.toggle-btn:active {
-  transform: scale(0.98);
-}
-
+.toggle-btn:hover { background: #EDF4FF; color: #1B4FD8; border-color: #7FB3FF; }
+.toggle-btn.active { background: #EFF6FF; color: #1B4FD8; border-color: #93C5FD; }
+.toggle-btn:active { transform: scale(0.98); }
 
 input, select, textarea {
   border: 1px solid #d1d5db;
@@ -671,103 +562,42 @@ input, select, textarea {
   font-size: 13px;
   background: white;
   color: #111827;
+  font-family: 'Geist', sans-serif;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 textarea { min-height: 68px; }
 select:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
-
-/* Focus usklađen s plavom bojom brenda umjesto jarke crvene */
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #1B4FD8;
   box-shadow: 0 0 0 3px rgba(27, 79, 216, 0.08);
 }
 
-.actions.full { grid-column: span 3; display: flex; gap: 8px; padding-top: 2px; }
-
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-
   background: #EDF4FF;
   color: #1B4FD8;
-
   border: 1px solid #7FB3FF;
   border-radius: 9px;
-
   padding: 8px 14px;
-
   cursor: pointer;
-
   font-weight: 600;
   font-size: 12.5px;
   line-height: 1;
-
   font-family: 'Geist', sans-serif;
-
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s,
-    transform 0.12s,
-    box-shadow 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s;
 }
-
 .btn-primary:hover {
   background: #1B4FD8;
   color: #FFFFFF;
-
   border-color: transparent;
-
-  box-shadow:
-    0 4px 12px rgba(27, 79, 216, 0.22),
-    0 2px 6px rgba(124, 58, 237, 0.18);
+  box-shadow: 0 4px 12px rgba(27, 79, 216, 0.22), 0 2px 6px rgba(124, 58, 237, 0.18);
 }
-
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.btn-primary i {
-  font-size: 14px;
-}
-
-/* ── CANCEL BUTTON ── */
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-
-  background: #FFFFFF;
-  color: #374151;
-
-  border: 1px solid #E5E7EB;
-  border-radius: 10px;
-
-  padding: 10px 16px;
-
-  cursor: pointer;
-
-  font-weight: 600;
-  font-size: 13px;
-
-  font-family: 'Geist', sans-serif;
-
-  transition:
-    background 0.12s,
-    color 0.12s,
-    border-color 0.12s;
-}
-
-.btn-secondary:hover {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
-}
-.error { color: #dc2626; margin-top: 10px; font-size: 13px; }
-.success { color: #16a34a; margin-top: 10px; font-size: 13px; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary i { font-size: 14px; }
 
 .filters-top {
   display: grid;
@@ -784,11 +614,8 @@ input:focus, select:focus, textarea:focus {
   padding-top: 10px;
   border-top: 1px solid #f3f4f6;
 }
-.filters-top label,
-.filters-bottom label { font-size: 11px; }
-.filters-top input,
-.filters-top select,
-.filters-bottom select { padding: 8px 10px; font-size: 12px; }
+.filters-top label, .filters-bottom label { font-size: 11px; }
+.filters-top input, .filters-top select, .filters-bottom select { padding: 8px 10px; font-size: 12px; }
 
 .panel-header {
   display: flex;
@@ -831,52 +658,34 @@ td {
   vertical-align: middle;
 }
 tr:last-child td { border-bottom: none; }
-.table-actions { display: flex; gap: 6px; }
+.table-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
 
 .subscriber-type-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-
   padding: 8px 6px;
-
   border-radius: 6px;
-
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.01em;
-
   border: 1px solid transparent;
-
   white-space: nowrap;
-}
-
-.subscriber-type-badge svg {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-}
-
-/* Fizička osoba */
-.subscriber-type-badge.physical {
-  background: #EDF4FF;
-  color: #1B4FD8;
-  border-color: #BFDBFE;
-}
-
-/* Pravna osoba */
-.subscriber-type-badge.legal {
-  background: #E5E7EB;
-  color: #111827;
-  border-color: #D1D5DB;
-}
-
-td .subscriber-type-badge {
   min-width: 88px;
 }
-/* Mali gumbi u tablici (Tvoj originalni dizajn) */
+.subscriber-type-badge svg { width: 13px; height: 13px; flex-shrink: 0; }
+.subscriber-type-badge.physical { background: #EDF4FF; color: #1B4FD8; border-color: #BFDBFE; }
+.subscriber-type-badge.legal    { background: #E5E7EB; color: #111827; border-color: #D1D5DB; }
+
 .small-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: #f3f4f6;
   color: #374151;
   border: 1px solid #e5e7eb;
@@ -885,8 +694,10 @@ td .subscriber-type-badge {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  font-family: 'Geist', sans-serif;
   transition: background 0.15s;
 }
+.small-btn i { font-size: 13px; }
 .small-btn:hover { background: #e5e7eb; }
 .small-btn.danger { background: rgba(220,38,38,0.08); color: #dc2626; border-color: rgba(220,38,38,0.2); }
 .small-btn.danger:hover { background: rgba(220,38,38,0.15); }
@@ -897,8 +708,7 @@ td .subscriber-type-badge {
 }
 @media (max-width: 760px) {
   .form-grid { grid-template-columns: 1fr; }
-  .field.full, .field.half, .actions.full { grid-column: span 1; }
-  .section-label { grid-column: span 1; }
+  .field.full, .field.half, .actions.full, .section-label { grid-column: span 1; }
   .type-toggle { flex-direction: column; }
   .filters-bottom { grid-template-columns: 1fr; }
 }
