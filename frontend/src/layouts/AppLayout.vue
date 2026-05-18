@@ -1,7 +1,6 @@
 <template>
   <div class="layout">
     <aside class="sidebar">
-
       <div class="brand">
         <div class="logo">HT</div>
         <div class="brand-text">
@@ -60,16 +59,23 @@
             <span>{{ authStore.user?.role ?? "—" }}</span>
           </div>
         </div>
+
         <button class="logout" @click="logout">
           <i class="ti ti-logout"></i>
           Odjava
         </button>
       </div>
-
     </aside>
 
     <main class="main">
-      <RouterView />
+      <div class="main-content">
+        <RouterView />
+      </div>
+
+      <footer class="app-footer">
+        <span>© {{ new Date().getFullYear() }} HT Mostar</span>
+       
+      </footer>
     </main>
   </div>
 </template>
@@ -275,8 +281,8 @@ function logout() {
 }
 
 .logout:hover {
-  background:#DC2626;
-  color: #FFFF;
+  background: #DC2626;
+  color: #FFFFFF;
   border-color: #FECACA;
 }
 
@@ -285,7 +291,46 @@ function logout() {
   flex: 1;
   height: 100vh;
   overflow-y: auto;
-  padding: 36px 40px;
+  padding: 36px 40px 18px;
   background: #EDF4FF;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.main-content {
+  flex: 1;
+}
+
+.app-footer {
+  margin-top: 28px;
+  padding: 16px 0 2px;
+
+  border-top: 1px solid rgba(229, 231, 235, 0.85);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  color: #111827;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+
+@media (max-width: 760px) {
+  .main {
+    padding: 28px 22px 16px;
+  }
+
+  .app-footer {
+    flex-wrap: wrap;
+    text-align: center;
+    line-height: 1.5;
+  }
 }
 </style>
