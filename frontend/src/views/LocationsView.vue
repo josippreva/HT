@@ -114,78 +114,20 @@
       </table>
     </section>
 
-    <div v-if="editModal.open" class="modal-backdrop" @click.self="closeEdit">
-      <div class="modal">
-        <h2><i class="ti ti-pencil"></i> Uredi lokaciju</h2>
-
-        <form class="form-grid" @submit.prevent="saveEdit">
-          <div class="field">
-            <label>Entitet</label>
-            <select v-model="editForm.entity_id" @change="onEditEntityChange" required>
-              <option value="">Odaberi entitet</option>
-              <option v-for="entity in entities" :key="entity.id" :value="entity.id">{{ entity.name }}</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Regija</label>
-            <select v-model="editForm.region_id" @change="onEditRegionChange" :disabled="!editForm.entity_id" required>
-              <option value="">Odaberi regiju</option>
-              <option v-for="region in editRegions" :key="region.id" :value="region.id">{{ region.name }}</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Grad / općina</label>
-            <select v-model="editForm.city_id" @change="onEditCityChange" :disabled="!editForm.region_id" required>
-              <option value="">Odaberi grad/općinu</option>
-              <option v-for="city in editCities" :key="city.id" :value="city.id">{{ city.name }}</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Poštanski broj</label>
-            <select v-model="editForm.postal_code_id" :disabled="!editForm.city_id" required>
-              <option value="">Odaberi poštanski broj</option>
-              <option v-for="postal in editPostalCodes" :key="postal.id" :value="postal.id">
-                {{ postal.postal_code }} – {{ postal.postal_name }}
-              </option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Naziv lokacije</label>
-            <input v-model="editForm.name" type="text" required />
-          </div>
-
-          <div class="field">
-            <label>Adresa</label>
-            <input v-model="editForm.address" type="text" />
-          </div>
-
-          <div class="field full">
-            <label>Napomena <span class="optional">(opcionalno)</span></label>
-            <textarea v-model="editForm.note"></textarea>
-          </div>
-
-          <div class="actions full">
-            <button type="submit" class="btn-primary" :disabled="editSubmitting">
-              <i class="ti ti-device-floppy"></i>
-              {{ editSubmitting ? "Spremanje..." : "Spremi izmjene" }}
-            </button>
-            <button type="button" class="btn-secondary" @click="closeEdit">Odustani</button>
-          </div>
-        </form>
-
-        <p v-if="editError" class="error">{{ editError }}</p>
-      </div>
-    </div>
+    <EditLocations
+      :open="editModal.open"
+      :location="editModal.location"
+      :entities="entities"
+      @close="closeEdit"
+      @saved="loadLocations"
+    />
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import api from "../api/client";
+import EditLocations from "../components/EditLocations.vue";
 
 const entities    = ref([]);
 const regions     = ref([]);
@@ -203,17 +145,7 @@ const form = reactive({
   name: "", address: "", note: "",
 });
 
-const editModal       = reactive({ open: false, id: null });
-const editRegions     = ref([]);
-const editCities      = ref([]);
-const editPostalCodes = ref([]);
-const editSubmitting  = ref(false);
-const editError       = ref("");
-
-const editForm = reactive({
-  entity_id: "", region_id: "", city_id: "", postal_code_id: "",
-  name: "", address: "", note: "",
-});
+const editModal = reactive({ open: false, location: null });
 
 async function loadEntities() {
   const { data } = await api.get("/entities");
@@ -259,10 +191,16 @@ async function createLocation() {
   submitting.value = true;
   try {
     await api.post("/locations", {
-      city_id: Number(form.city_id), postal_code_id: Number(form.postal_code_id),
-      name: form.name, address: form.address || null, note: form.note || null,
+      city_id: Number(form.city_id),
+      postal_code_id: Number(form.postal_code_id),
+      name: form.name,
+      address: form.address || null,
+      note: form.note || null,
     });
-    Object.assign(form, { entity_id: "", region_id: "", city_id: "", postal_code_id: "", name: "", address: "", note: "" });
+    Object.assign(form, {
+      entity_id: "", region_id: "", city_id: "", postal_code_id: "",
+      name: "", address: "", note: "",
+    });
     regions.value = cities.value = postalCodes.value = [];
     success.value = "Lokacija je uspješno spremljena.";
     await loadLocations();
@@ -273,74 +211,14 @@ async function createLocation() {
   }
 }
 
-async function startEdit(location) {
-  editError.value = "";
-  editModal.id = location.id;
-  const cityResp   = await api.get(`/cities/${location.city_id}`);
-  const regionId   = cityResp.data.region_id;
-  const regionResp = await api.get(`/regions/${regionId}`);
-  const entityId   = regionResp.data.entity_id;
-  const [regionsResp, citiesResp, postalsResp] = await Promise.all([
-    api.get(`/regions?entity_id=${entityId}`),
-    api.get(`/cities?region_id=${regionId}`),
-    api.get(`/postal-codes?city_id=${location.city_id}`),
-  ]);
-  editRegions.value     = regionsResp.data;
-  editCities.value      = citiesResp.data;
-  editPostalCodes.value = postalsResp.data;
-  Object.assign(editForm, {
-    entity_id: entityId, region_id: regionId, city_id: location.city_id,
-    postal_code_id: location.postal_code_id, name: location.name,
-    address: location.address || "", note: location.note || "",
-  });
+function startEdit(location) {
+  editModal.location = location;
   editModal.open = true;
 }
 
 function closeEdit() {
   editModal.open = false;
-  editModal.id   = null;
-  editError.value = "";
-}
-
-async function onEditEntityChange() {
-  editForm.region_id = editForm.city_id = editForm.postal_code_id = "";
-  editRegions.value = editCities.value = editPostalCodes.value = [];
-  if (!editForm.entity_id) return;
-  const { data } = await api.get(`/regions?entity_id=${editForm.entity_id}`);
-  editRegions.value = data;
-}
-
-async function onEditRegionChange() {
-  editForm.city_id = editForm.postal_code_id = "";
-  editCities.value = editPostalCodes.value = [];
-  if (!editForm.region_id) return;
-  const { data } = await api.get(`/cities?region_id=${editForm.region_id}`);
-  editCities.value = data;
-}
-
-async function onEditCityChange() {
-  editForm.postal_code_id = "";
-  editPostalCodes.value = [];
-  if (!editForm.city_id) return;
-  const { data } = await api.get(`/postal-codes?city_id=${editForm.city_id}`);
-  editPostalCodes.value = data;
-}
-
-async function saveEdit() {
-  editError.value = "";
-  editSubmitting.value = true;
-  try {
-    await api.put(`/locations/${editModal.id}`, {
-      city_id: Number(editForm.city_id), postal_code_id: Number(editForm.postal_code_id),
-      name: editForm.name, address: editForm.address || null, note: editForm.note || null,
-    });
-    closeEdit();
-    await loadLocations();
-  } catch {
-    editError.value = "Greška pri ažuriranju lokacije.";
-  } finally {
-    editSubmitting.value = false;
-  }
+  editModal.location = null;
 }
 
 async function deleteLocation(id) {
@@ -455,78 +333,27 @@ input:focus, select:focus, textarea:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-
-  background: #EDF4FF;
-  color: #1B4FD8;
-  border-color: #7FB3FF;
-
-  border-radius: 10px;
-
-  padding: 10px 16px;
-
-  cursor: pointer;
-
-  font-weight: 600;
-  font-size: 13px;
-
-  font-family: 'Geist', sans-serif;
-
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s,
-    transform 0.12s;
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 6px;
-
   background: #EDF4FF;
   color: #1B4FD8;
-
   border: 1px solid #7FB3FF;
   border-radius: 9px;
-
   padding: 8px 14px;
-
   cursor: pointer;
-
   font-weight: 600;
   font-size: 12.5px;
   line-height: 1;
-
   font-family: 'Geist', sans-serif;
-
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s,
-    transform 0.12s,
-    box-shadow 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s;
 }
-
 .btn-primary:hover {
   background: #1B4FD8;
   color: #FFFFFF;
-
   border-color: transparent;
-
-  box-shadow:
-    0 4px 12px rgba(27, 79, 216, 0.22),
-    0 2px 6px rgba(124, 58, 237, 0.18);
+  box-shadow: 0 4px 12px rgba(27, 79, 216, 0.22), 0 2px 6px rgba(124, 58, 237, 0.18);
 }
-
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.btn-primary i {
-  font-size: 14px;
-}
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary i { font-size: 14px; }
 
 .error  { color: #DC2626; margin-top: 10px; font-size: 13px; }
 .success { color: #16A34A; margin-top: 10px; font-size: 13px; }
@@ -584,38 +411,6 @@ tr:hover td { background: #FAFAFA; }
 .small-btn:hover { background: #E5E7EB; }
 .small-btn.danger { background: rgba(220,38,38,0.06); color: #DC2626; border-color: rgba(220,38,38,0.2); }
 .small-btn.danger:hover { background: rgba(220,38,38,0.12); }
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  backdrop-filter: blur(2px);
-}
-.modal {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  width: 680px;
-  max-width: 95vw;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-  border: 1px solid #E5E7EB;
-}
-.modal h2 {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.modal h2 i { color: #1B4FD8; font-size: 18px; }
 
 @media (max-width: 900px) {
   .form-grid { grid-template-columns: 1fr 1fr; }
