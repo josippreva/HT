@@ -6,7 +6,7 @@
     </div>
 
     <section class="panel">
-      <h2>{{ editingId ? "Uredi uređaj" : "Novi uređaj" }}</h2>
+      <h2>Novi uređaj</h2>
 
       <form class="form-grid" @submit.prevent="saveDevice">
         <div class="field">
@@ -77,10 +77,7 @@
         <div class="actions full">
           <button type="submit" class="btn-primary">
             <i class="ti ti-device-floppy"></i>
-            {{ editingId ? "Spremi izmjene" : "Spremi uređaj" }}
-          </button>
-          <button v-if="editingId" type="button" class="btn-secondary" @click="cancelEdit">
-            Odustani
+            Spremi uređaj
           </button>
         </div>
       </form>
@@ -199,29 +196,38 @@
         </tbody>
       </table>
     </section>
+
+    <EditDevices
+      :open="editModal.open"
+      :device="editModal.device"
+      :entities="entities"
+      :all-locations="allLocations"
+      @close="closeEdit"
+      @saved="loadDevices"
+    />
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import api from "../api/client";
+import EditDevices from "../components/EditDevices.vue";
 
-const entities = ref([]);
+const entities     = ref([]);
 const allLocations = ref([]);
-const devices = ref([]);
+const devices      = ref([]);
 
-const formRegions = ref([]);
-const formCities = ref([]);
+const formRegions   = ref([]);
+const formCities    = ref([]);
 const formLocations = ref([]);
 
-const filterRegions = ref([]);
-const filterCities = ref([]);
+const filterRegions   = ref([]);
+const filterCities    = ref([]);
 const filterLocations = ref([]);
 
 const loading = ref(false);
-const error = ref("");
+const error   = ref("");
 const success = ref("");
-const editingId = ref(null);
 
 const form = reactive({
   entity_id: "", region_id: "", city_id: "", location_id: "",
@@ -231,6 +237,8 @@ const form = reactive({
 const filters = reactive({
   entity_id: "", region_id: "", city_id: "", location_id: "", active: "", search: "",
 });
+
+const editModal = reactive({ open: false, device: null });
 
 async function loadEntities() {
   const response = await api.get("/entities");
@@ -263,7 +271,7 @@ function onFormCityChange() {
   form.location_id = "";
   if (!form.city_id) { formLocations.value = []; return; }
   formLocations.value = allLocations.value.filter(
-    (location) => Number(location.city_id) === Number(form.city_id)
+    (l) => Number(l.city_id) === Number(form.city_id)
   );
 }
 
@@ -301,7 +309,7 @@ function onFilterCityChange() {
     return;
   }
   filterLocations.value = allLocations.value.filter(
-    (location) => Number(location.city_id) === Number(filters.city_id)
+    (l) => Number(l.city_id) === Number(filters.city_id)
   );
   loadDevices();
 }
@@ -310,12 +318,12 @@ async function loadDevices() {
   loading.value = true;
   try {
     const params = new URLSearchParams();
-    if (filters.entity_id) params.append("entity_id", filters.entity_id);
-    if (filters.region_id) params.append("region_id", filters.region_id);
-    if (filters.city_id) params.append("city_id", filters.city_id);
+    if (filters.entity_id)  params.append("entity_id",  filters.entity_id);
+    if (filters.region_id)  params.append("region_id",  filters.region_id);
+    if (filters.city_id)    params.append("city_id",    filters.city_id);
     if (filters.location_id) params.append("location_id", filters.location_id);
-    if (filters.active !== "") params.append("active", filters.active);
-    if (filters.search) params.append("search", filters.search);
+    if (filters.active !== "") params.append("active",  filters.active);
+    if (filters.search)     params.append("search",     filters.search);
     const query = params.toString();
     const response = await api.get(query ? `/devices?${query}` : "/devices");
     devices.value = response.data;
@@ -326,21 +334,15 @@ async function loadDevices() {
 
 async function saveDevice() {
   error.value = success.value = "";
-  const payload = {
-    location_id: Number(form.location_id),
-    name: form.name,
-    device_type: form.device_type,
-    serial_number: form.serial_number || null,
-    active: form.active,
-  };
   try {
-    if (editingId.value) {
-      await api.put(`/devices/${editingId.value}`, payload);
-      success.value = "Uređaj je uspješno izmijenjen.";
-    } else {
-      await api.post("/devices", payload);
-      success.value = "Uređaj je uspješno spremljen.";
-    }
+    await api.post("/devices", {
+      location_id: Number(form.location_id),
+      name: form.name,
+      device_type: form.device_type,
+      serial_number: form.serial_number || null,
+      active: form.active,
+    });
+    success.value = "Uređaj je uspješno spremljen.";
     resetForm();
     await loadDevices();
   } catch {
@@ -348,26 +350,17 @@ async function saveDevice() {
   }
 }
 
-async function startEdit(device) {
-  editingId.value = device.id;
-  form.entity_id = device.entity_id;
-  await onFormEntityChange();
-  form.region_id = device.region_id;
-  await onFormRegionChange();
-  form.city_id = device.city_id;
-  onFormCityChange();
-  form.location_id = device.location_id;
-  form.name = device.name;
-  form.device_type = device.device_type;
-  form.serial_number = device.serial_number || "";
-  form.active = device.active;
-  window.scrollTo({ top: 0, behavior: "smooth" });
+function startEdit(device) {
+  editModal.device = device;
+  editModal.open = true;
 }
 
-function cancelEdit() { resetForm(); }
+function closeEdit() {
+  editModal.open = false;
+  editModal.device = null;
+}
 
 function resetForm() {
-  editingId.value = null;
   form.entity_id = form.region_id = form.city_id = form.location_id = "";
   form.name = form.serial_number = "";
   form.device_type = "MSAN";
@@ -399,7 +392,6 @@ onMounted(async () => {
 
 * { font-family: 'Geist', sans-serif; }
 
-/* ── Page header ── */
 .page-header { margin-bottom: 24px; }
 .page-header h1 {
   margin: 0;
@@ -414,7 +406,6 @@ onMounted(async () => {
 .page-header h1 i { font-size: 26px; color: #1B4FD8; }
 .page-header p { margin-top: 5px; color: #6B7280; font-size: 14px; }
 
-/* ── Panel ── */
 .panel {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
@@ -443,7 +434,6 @@ onMounted(async () => {
   border: 1px solid #E5E7EB;
 }
 
-/* ── Form ── */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -493,61 +483,37 @@ input, select {
 select:disabled { background: #F9FAFB; color: #9CA3AF; cursor: not-allowed; }
 input:focus, select:focus {
   outline: none;
-  border-color: #DC2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+  border-color: #1B4FD8;
+  box-shadow: 0 0 0 3px rgba(27, 79, 216, 0.08);
   background: white;
 }
 
-/* ── Buttons ── */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-
   background: #EDF4FF;
   color: #1B4FD8;
-
   border: 1px solid #7FB3FF;
   border-radius: 9px;
-
   padding: 8px 14px;
-
   cursor: pointer;
-
   font-weight: 600;
   font-size: 12.5px;
   line-height: 1;
-
   font-family: 'Geist', sans-serif;
-
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s,
-    transform 0.12s,
-    box-shadow 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s;
 }
-
 .btn-primary:hover {
   background: #1B4FD8;
   color: #FFFFFF;
-
   border-color: transparent;
-
-  box-shadow:
-    0 4px 12px rgba(27, 79, 216, 0.22),
-    0 2px 6px rgba(124, 58, 237, 0.18);
+  box-shadow: 0 4px 12px rgba(27, 79, 216, 0.22), 0 2px 6px rgba(124, 58, 237, 0.18);
 }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary i { font-size: 14px; }
 
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.btn-primary i {
-  font-size: 14px;
-}
-/* ── Filters ── */
 .filters {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -560,12 +526,10 @@ input:focus, select:focus {
 .filters label { font-size: 11px; }
 .filters input, .filters select { padding: 8px 10px; font-size: 12px; }
 
-/* ── Feedback ── */
 .error   { color: #DC2626; margin-top: 10px; font-size: 13px; }
 .success { color: #16A34A; margin-top: 10px; font-size: 13px; }
 .loading, .empty { text-align: center; color: #6B7280; padding: 24px; font-size: 14px; }
 
-/* ── Table ── */
 table { width: 100%; border-collapse: collapse; }
 th {
   text-align: left;
@@ -589,7 +553,6 @@ tr:last-child td { border-bottom: none; }
 tr:hover td { background: #FAFAFA; }
 .table-actions { display: flex; gap: 6px; }
 
-/* ── Badges ── */
 .badge {
   display: inline-flex;
   padding: 3px 9px;
@@ -602,7 +565,6 @@ tr:hover td { background: #FAFAFA; }
 .badge-green { background: rgba(22,163,74,0.08);   color: #16A34A; }
 .badge-gray  { background: rgba(107,114,128,0.08); color: #6B7280; }
 
-/* ── Small buttons ── */
 .small-btn {
   display: inline-flex;
   align-items: center;
@@ -623,7 +585,6 @@ tr:hover td { background: #FAFAFA; }
 .small-btn.danger { background: rgba(220,38,38,0.06); color: #DC2626; border-color: rgba(220,38,38,0.2); }
 .small-btn.danger:hover { background: rgba(220,38,38,0.12); }
 
-/* ── Responsive ── */
 @media (max-width: 1200px) { .filters { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 900px) {
   .form-grid { grid-template-columns: 1fr 1fr; }
