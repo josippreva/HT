@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status , Query
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.models import Location, City, PostalCode
+from app.models import Location, City, PostalCode , Region , Entity
 from app.schemas.location import LocationCreate, LocationUpdate
 from app.api.deps import get_current_user
 router = APIRouter(prefix="/locations", tags=["Locations"],dependencies=[Depends(get_current_user)])
@@ -24,15 +24,47 @@ def validate_city_and_postal_code(db: Session, city_id: int, postal_code_id: int
         )
 
 
+from fastapi import Query
+from app.models import Location, City, PostalCode, Region, Entity
+
+
 @router.get("")
-def list_locations(db: Session = Depends(get_db)):
-    rows = (
-        db.query(Location, City, PostalCode)
+def list_locations(
+    search: str | None = Query(default=None),
+    entity_id: int | None = Query(default=None),
+    region_id: int | None = Query(default=None),
+    city_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(Location, City, PostalCode, Region, Entity)
         .join(City, Location.city_id == City.id)
+        .join(Region, City.region_id == Region.id)
+        .join(Entity, Region.entity_id == Entity.id)
         .join(PostalCode, Location.postal_code_id == PostalCode.id)
-        .order_by(Location.name)
-        .all()
     )
+
+    if search:
+        value = f"%{search}%"
+        query = query.filter(
+            (Location.name.ilike(value)) |
+            (Location.address.ilike(value)) |
+            (Location.note.ilike(value)) |
+            (City.name.ilike(value)) |
+            (PostalCode.postal_code.ilike(value)) |
+            (PostalCode.postal_name.ilike(value))
+        )
+
+    if entity_id:
+        query = query.filter(Entity.id == entity_id)
+
+    if region_id:
+        query = query.filter(Region.id == region_id)
+
+    if city_id:
+        query = query.filter(City.id == city_id)
+
+    rows = query.order_by(Location.name).all()
 
     return [
         {
@@ -42,11 +74,17 @@ def list_locations(db: Session = Depends(get_db)):
             "name": location.name,
             "address": location.address,
             "note": location.note,
+
+            "entity_id": entity.id,
+            "entity_name": entity.name,
+            "region_id": region.id,
+            "region_name": region.name,
             "city_name": city.name,
+
             "postal_code": postal.postal_code,
             "postal_name": postal.postal_name,
         }
-        for location, city, postal in rows
+        for location, city, postal, region, entity in rows
     ]
 
 

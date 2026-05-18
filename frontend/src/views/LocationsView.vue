@@ -70,6 +70,63 @@
       <p v-if="success" class="success">{{ success }}</p>
     </section>
 
+        <section class="panel">
+      <div class="filters-top">
+        <div class="field">
+          <label>Pretraga</label>
+          <input
+            v-model="filters.search"
+            type="text"
+            placeholder="Naziv, adresa, grad, poštanski broj..."
+            @input="loadLocations"
+          />
+        </div>
+      </div>
+
+      <div class="filters-bottom">
+        <div class="field">
+          <label>Entitet</label>
+          <select v-model="filters.entity_id" @change="onFilterEntityChange">
+            <option value="">Svi entiteti</option>
+            <option v-for="entity in entities" :key="entity.id" :value="entity.id">
+              {{ entity.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Regija</label>
+          <select
+            v-model="filters.region_id"
+            @change="onFilterRegionChange"
+            :disabled="!filters.entity_id"
+          >
+            <option value="">Sve regije</option>
+            <option v-for="region in filterRegions" :key="region.id" :value="region.id">
+              {{ region.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Grad</label>
+          <select
+            v-model="filters.city_id"
+            @change="onFilterCityChange"
+            :disabled="!filters.region_id"
+          >
+            <option value="">Svi gradovi</option>
+            <option v-for="city in filterCities" :key="city.id" :value="city.id">
+              {{ city.name }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+
+
+
     <section class="panel">
       <div class="panel-header">
         <h2>Popis lokacija</h2>
@@ -135,6 +192,11 @@ const cities      = ref([]);
 const postalCodes = ref([]);
 const locations   = ref([]);
 
+const filterRegions = ref([]);
+const filterCities = ref([]);
+
+
+
 const loading    = ref(false);
 const submitting = ref(false);
 const error      = ref("");
@@ -144,6 +206,15 @@ const form = reactive({
   entity_id: "", region_id: "", city_id: "", postal_code_id: "",
   name: "", address: "", note: "",
 });
+
+
+const filters = reactive({
+  search: "",
+  entity_id: "",
+  region_id: "",
+  city_id: "",
+});
+
 
 const editModal = reactive({ open: false, location: null });
 
@@ -155,7 +226,16 @@ async function loadEntities() {
 async function loadLocations() {
   loading.value = true;
   try {
-    const { data } = await api.get("/locations");
+    const params = new URLSearchParams();
+
+    if (filters.search) params.append("search", filters.search);
+    if (filters.entity_id) params.append("entity_id", filters.entity_id);
+    if (filters.region_id) params.append("region_id", filters.region_id);
+    if (filters.city_id) params.append("city_id", filters.city_id);
+
+    const query = params.toString();
+    const { data } = await api.get(query ? `/locations?${query}` : "/locations");
+
     locations.value = data;
   } finally {
     loading.value = false;
@@ -185,6 +265,39 @@ async function onCityChange() {
   const { data } = await api.get(`/postal-codes?city_id=${form.city_id}`);
   postalCodes.value = data;
 }
+
+
+async function onFilterEntityChange() {
+  filters.region_id = "";
+  filters.city_id = "";
+
+  filterRegions.value = [];
+  filterCities.value = [];
+
+  if (filters.entity_id) {
+    const { data } = await api.get(`/regions?entity_id=${filters.entity_id}`);
+    filterRegions.value = data;
+  }
+
+  await loadLocations();
+}
+
+async function onFilterRegionChange() {
+  filters.city_id = "";
+  filterCities.value = [];
+
+  if (filters.region_id) {
+    const { data } = await api.get(`/cities?region_id=${filters.region_id}`);
+    filterCities.value = data;
+  }
+
+  await loadLocations();
+}
+
+async function onFilterCityChange() {
+  await loadLocations();
+}
+
 
 async function createLocation() {
   error.value = success.value = "";
@@ -299,6 +412,43 @@ onMounted(async () => {
 .field { display: flex; flex-direction: column; }
 .field.full { grid-column: span 3; }
 .actions.full { grid-column: span 3; display: flex; gap: 8px; padding-top: 4px; }
+
+
+
+
+
+.filters-top {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+.filters-bottom {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  align-items: end;
+  padding-top: 10px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.filters-top label,
+.filters-bottom label {
+  font-size: 11px;
+}
+
+.filters-top input,
+.filters-top select,
+.filters-bottom select {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+
+
+
 
 label {
   font-size: 12px;
@@ -419,5 +569,6 @@ tr:hover td { background: #FAFAFA; }
 @media (max-width: 760px) {
   .form-grid { grid-template-columns: 1fr; }
   .field.full, .actions.full { grid-column: span 1; }
+  .filters-bottom { grid-template-columns: 1fr;}
 }
 </style>
