@@ -11,3 +11,4 @@ from app.models.rak_number_block import RakNumberBlock
 from app.models.number_range import NumberRange
 from app.models.subscriber import Subscriber
 from app.models.phone_number import PhoneNumber
+from app.models.activity_log import ActivityLog

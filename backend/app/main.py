@@ -21,6 +21,8 @@ from app.api.dashboard import router as dashboard_router
 from app.api.cities import router as cities_router
 from app.api.regions import router as regions_router
 
+from app.api.activity_logs import router as activity_logs_router
+
 app = FastAPI(
     title="HT Mostar API",
     version="1.0.0",
@@ -52,6 +54,8 @@ app.include_router(phone_numbers_router)
 app.include_router(dashboard_router)
 app.include_router(cities_router)
 app.include_router(regions_router)
+app.include_router(activity_logs_router)
+
 
 @app.get("/")
 def root():

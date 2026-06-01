@@ -5,6 +5,11 @@ from app.db.database import get_db
 from app.models import Location, City, PostalCode , Region , Entity
 from app.schemas.location import LocationCreate, LocationUpdate
 from app.api.deps import get_current_user
+
+from app.utils.activity_logger import log_activity
+
+
+
 router = APIRouter(prefix="/locations", tags=["Locations"],dependencies=[Depends(get_current_user)])
 
 
@@ -117,7 +122,11 @@ def get_location(location_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_location(data: LocationCreate, db: Session = Depends(get_db)):
+def create_location(
+    data: LocationCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     validate_city_and_postal_code(db, data.city_id, data.postal_code_id)
 
     location = Location(
@@ -129,14 +138,41 @@ def create_location(data: LocationCreate, db: Session = Depends(get_db)):
     )
 
     db.add(location)
+    db.flush()
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="LOCATION_CREATED",
+        entity_type="location",
+        entity_id=location.id,
+        description=f"Kreirana lokacija {location.name}",
+        old_data=None,
+        new_data={
+            "id": location.id,
+            "city_id": location.city_id,
+            "postal_code_id": location.postal_code_id,
+            "name": location.name,
+            "address": location.address,
+            "note": location.note,
+        },
+    )
+
     db.commit()
     db.refresh(location)
 
     return location
 
 
+
+
 @router.put("/{location_id}")
-def update_location(location_id: int, data: LocationUpdate, db: Session = Depends(get_db)):
+def update_location(
+    location_id: int,
+    data: LocationUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     location = db.query(Location).filter(Location.id == location_id).first()
 
     if not location:
@@ -144,24 +180,76 @@ def update_location(location_id: int, data: LocationUpdate, db: Session = Depend
 
     validate_city_and_postal_code(db, data.city_id, data.postal_code_id)
 
+    old_data = {
+        "id": location.id,
+        "city_id": location.city_id,
+        "postal_code_id": location.postal_code_id,
+        "name": location.name,
+        "address": location.address,
+        "note": location.note,
+    }
+
     location.city_id = data.city_id
     location.postal_code_id = data.postal_code_id
     location.name = data.name
     location.address = data.address
     location.note = data.note
 
+    new_data = {
+        "id": location.id,
+        "city_id": location.city_id,
+        "postal_code_id": location.postal_code_id,
+        "name": location.name,
+        "address": location.address,
+        "note": location.note,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="LOCATION_UPDATED",
+        entity_type="location",
+        entity_id=location.id,
+        description=f"Ažurirana lokacija {location.name}",
+        old_data=old_data,
+        new_data=new_data,
+    )
+
     db.commit()
     db.refresh(location)
 
     return location
 
-
 @router.delete("/{location_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_location(location_id: int, db: Session = Depends(get_db)):
+def delete_location(
+    location_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     location = db.query(Location).filter(Location.id == location_id).first()
 
     if not location:
         raise HTTPException(status_code=404, detail="Lokacija nije pronađena")
+
+    old_data = {
+        "id": location.id,
+        "city_id": location.city_id,
+        "postal_code_id": location.postal_code_id,
+        "name": location.name,
+        "address": location.address,
+        "note": location.note,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="LOCATION_DELETED",
+        entity_type="location",
+        entity_id=location.id,
+        description=f"Obrisana lokacija {location.name}",
+        old_data=old_data,
+        new_data=None,
+    )
 
     db.delete(location)
     db.commit()

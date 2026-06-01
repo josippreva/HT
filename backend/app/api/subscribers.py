@@ -6,6 +6,10 @@ from app.models import Subscriber, PhoneNumber, NumberRange, Location, City, Reg
 from app.schemas.subscriber import SubscriberCreate, SubscriberUpdate, SubscriberOut
 from app.api.deps import get_current_user
 
+from app.utils.activity_logger import log_activity
+
+
+
 router = APIRouter(prefix="/subscribers", tags=["Subscribers"],dependencies=[Depends(get_current_user)])
 
 
@@ -123,10 +127,27 @@ def get_subscriber(subscriber_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_subscriber(data: SubscriberCreate, db: Session = Depends(get_db)):
+def create_subscriber(
+    data: SubscriberCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     subscriber = Subscriber(**data.model_dump())
 
     db.add(subscriber)
+    db.flush()
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="SUBSCRIBER_CREATED",
+        entity_type="subscriber",
+        entity_id=subscriber.id,
+        description=f"Kreiran pretplatnik ID {subscriber.id}",
+        old_data=None,
+        new_data=data.model_dump(),
+    )
+
     db.commit()
     db.refresh(subscriber)
 
@@ -138,14 +159,32 @@ def update_subscriber(
     subscriber_id: int,
     data: SubscriberUpdate,
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     subscriber = db.query(Subscriber).filter(Subscriber.id == subscriber_id).first()
 
     if not subscriber:
         raise HTTPException(status_code=404, detail="Pretplatnik nije pronađen")
 
-    for key, value in data.model_dump(exclude_unset=True).items():
+    old_data = subscriber_to_dict(subscriber)
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
         setattr(subscriber, key, value)
+
+    new_data = subscriber_to_dict(subscriber)
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="SUBSCRIBER_UPDATED",
+        entity_type="subscriber",
+        entity_id=subscriber.id,
+        description=f"Ažuriran pretplatnik ID {subscriber.id}",
+        old_data=old_data,
+        new_data=new_data,
+    )
 
     db.commit()
     db.refresh(subscriber)
@@ -154,7 +193,11 @@ def update_subscriber(
 
 
 @router.delete("/{subscriber_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_subscriber(subscriber_id: int, db: Session = Depends(get_db)):
+def delete_subscriber(
+    subscriber_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     subscriber = db.query(Subscriber).filter(Subscriber.id == subscriber_id).first()
 
     if not subscriber:
@@ -171,6 +214,19 @@ def delete_subscriber(subscriber_id: int, db: Session = Depends(get_db)):
             status_code=400,
             detail="Pretplatnik ima dodijeljene brojeve i ne može se obrisati",
         )
+
+    old_data = subscriber_to_dict(subscriber)
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="SUBSCRIBER_DELETED",
+        entity_type="subscriber",
+        entity_id=subscriber.id,
+        description=f"Obrisan pretplatnik ID {subscriber.id}",
+        old_data=old_data,
+        new_data=None,
+    )
 
     db.delete(subscriber)
     db.commit()

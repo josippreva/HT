@@ -15,6 +15,9 @@ from app.schemas.phone_number_actions import (
     AssignPhoneNumberWithSubscriberRequest,
 )
 
+from app.utils.activity_logger import log_activity
+
+
 router = APIRouter(prefix="/phone-numbers", tags=["Phone Numbers"],dependencies=[Depends(get_current_user)])
 
 
@@ -199,7 +202,11 @@ def classify_phone_number(number: str) -> str:
 
 
 @router.post("/generate/{number_range_id}", status_code=status.HTTP_201_CREATED)
-def generate_phone_numbers(number_range_id: int, db: Session = Depends(get_db)):
+def generate_phone_numbers(
+    number_range_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     number_range = db.query(NumberRange).filter(NumberRange.id == number_range_id).first()
 
     if not number_range:
@@ -226,7 +233,30 @@ def generate_phone_numbers(number_range_id: int, db: Session = Depends(get_db)):
     ]
 
     db.add_all(numbers)
+
+    old_data = {
+        "generated": number_range.generated,
+    }
+
     number_range.generated = True
+
+    new_data = {
+        "generated": number_range.generated,
+        "range_start": number_range.range_start,
+        "range_end": number_range.range_end,
+        "count": count,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="PHONE_NUMBERS_GENERATED",
+        entity_type="number_range",
+        entity_id=number_range.id,
+        description=f"Generirano {count} brojeva za raspon {number_range.range_start} - {number_range.range_end}",
+        old_data=old_data,
+        new_data=new_data,
+    )
 
     db.commit()
 
@@ -436,6 +466,7 @@ def assign_phone_number(
     phone_number_id: int,
     data: AssignPhoneNumberRequest,
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     phone = db.query(PhoneNumber).filter(PhoneNumber.id == phone_number_id).first()
 
@@ -452,6 +483,17 @@ def assign_phone_number(
 
     validate_subscriber_matches_number_city(db, phone, subscriber)
 
+    old_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": phone.assigned_at.isoformat() if phone.assigned_at else None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
+
     phone.subscriber_id = subscriber.id
     phone.status = "zauzet"
     phone.assigned_at = datetime.now(timezone.utc)
@@ -461,11 +503,32 @@ def assign_phone_number(
     phone.domain = data.domain
     phone.note = data.note
 
+    new_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": phone.assigned_at.isoformat() if phone.assigned_at else None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="PHONE_NUMBER_ASSIGNED",
+        entity_type="phone_number",
+        entity_id=phone.id,
+        description=f"Broj {phone.number_value} dodijeljen pretplatniku ID {subscriber.id}",
+        old_data=old_data,
+        new_data=new_data,
+    )
+
     db.commit()
     db.refresh(phone)
 
     return phone
-
 
 
 @router.post("/{phone_number_id}/assign-with-new-subscriber")
@@ -473,6 +536,7 @@ def assign_phone_number_with_new_subscriber(
     phone_number_id: int,
     data: AssignPhoneNumberWithSubscriberRequest,
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     phone = db.query(PhoneNumber).filter(PhoneNumber.id == phone_number_id).first()
 
@@ -484,6 +548,17 @@ def assign_phone_number_with_new_subscriber(
 
     if phone.status == "karantena":
         raise HTTPException(status_code=400, detail="Broj je u karanteni")
+
+    old_phone_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": phone.assigned_at.isoformat() if phone.assigned_at else None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
 
     subscriber = Subscriber(**data.subscriber.model_dump())
 
@@ -500,6 +575,39 @@ def assign_phone_number_with_new_subscriber(
     phone.private_id = data.private_id
     phone.domain = data.domain
     phone.note = data.note
+
+    new_phone_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": phone.assigned_at.isoformat() if phone.assigned_at else None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="SUBSCRIBER_CREATED",
+        entity_type="subscriber",
+        entity_id=subscriber.id,
+        description=f"Kreiran novi pretplatnik ID {subscriber.id}",
+        old_data=None,
+        new_data=data.subscriber.model_dump(),
+    )
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="PHONE_NUMBER_ASSIGNED_WITH_NEW_SUBSCRIBER",
+        entity_type="phone_number",
+        entity_id=phone.id,
+        description=f"Broj {phone.number_value} dodijeljen novom pretplatniku ID {subscriber.id}",
+        old_data=old_phone_data,
+        new_data=new_phone_data,
+    )
 
     db.commit()
     db.refresh(phone)
@@ -519,11 +627,23 @@ def release_phone_number(
     phone_number_id: int,
     data: ReleasePhoneNumberRequest,
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     phone = db.query(PhoneNumber).filter(PhoneNumber.id == phone_number_id).first()
 
     if not phone:
         raise HTTPException(status_code=404, detail="Broj nije pronađen")
+
+    old_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": phone.assigned_at.isoformat() if phone.assigned_at else None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
 
     phone.subscriber_id = None
     phone.status = "slobodan"
@@ -533,6 +653,28 @@ def release_phone_number(
     phone.private_id = None
     phone.domain = None
     phone.note = data.note
+
+    new_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": None,
+        "quarantine_at": None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="PHONE_NUMBER_RELEASED",
+        entity_type="phone_number",
+        entity_id=phone.id,
+        description=f"Broj {phone.number_value} oslobođen",
+        old_data=old_data,
+        new_data=new_data,
+    )
 
     db.commit()
     db.refresh(phone)
@@ -545,11 +687,23 @@ def quarantine_phone_number(
     phone_number_id: int,
     data: QuarantinePhoneNumberRequest,
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     phone = db.query(PhoneNumber).filter(PhoneNumber.id == phone_number_id).first()
 
     if not phone:
         raise HTTPException(status_code=404, detail="Broj nije pronađen")
+
+    old_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": phone.assigned_at.isoformat() if phone.assigned_at else None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
 
     phone.subscriber_id = None
     phone.status = "karantena"
@@ -560,6 +714,28 @@ def quarantine_phone_number(
     phone.domain = None
     phone.note = data.note
 
+    new_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="PHONE_NUMBER_QUARANTINED",
+        entity_type="phone_number",
+        entity_id=phone.id,
+        description=f"Broj {phone.number_value} stavljen u karantenu",
+        old_data=old_data,
+        new_data=new_data,
+    )
+
     db.commit()
     db.refresh(phone)
 
@@ -567,11 +743,26 @@ def quarantine_phone_number(
 
 
 @router.post("/{phone_number_id}/activate")
-def activate_phone_number(phone_number_id: int, db: Session = Depends(get_db)):
+def activate_phone_number(
+    phone_number_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     phone = db.query(PhoneNumber).filter(PhoneNumber.id == phone_number_id).first()
 
     if not phone:
         raise HTTPException(status_code=404, detail="Broj nije pronađen")
+
+    old_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": phone.assigned_at.isoformat() if phone.assigned_at else None,
+        "quarantine_at": phone.quarantine_at.isoformat() if phone.quarantine_at else None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
 
     phone.subscriber_id = None
     phone.status = "slobodan"
@@ -580,6 +771,28 @@ def activate_phone_number(phone_number_id: int, db: Session = Depends(get_db)):
     phone.public_id = None
     phone.private_id = None
     phone.domain = None
+
+    new_data = {
+        "subscriber_id": phone.subscriber_id,
+        "status": phone.status,
+        "assigned_at": None,
+        "quarantine_at": None,
+        "public_id": phone.public_id,
+        "private_id": phone.private_id,
+        "domain": phone.domain,
+        "note": phone.note,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="PHONE_NUMBER_ACTIVATED",
+        entity_type="phone_number",
+        entity_id=phone.id,
+        description=f"Broj {phone.number_value} aktiviran i vraćen u slobodne brojeve",
+        old_data=old_data,
+        new_data=new_data,
+    )
 
     db.commit()
     db.refresh(phone)

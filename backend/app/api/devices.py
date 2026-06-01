@@ -5,6 +5,9 @@ from app.db.database import get_db
 from app.models import Device, Location, City, Region, Entity
 from app.schemas.device import DeviceCreate, DeviceUpdate
 from app.api.deps import get_current_user
+
+from app.utils.activity_logger import log_activity
+
 router = APIRouter(prefix="/devices", tags=["Devices"],dependencies=[Depends(get_current_user)])
 
 
@@ -105,7 +108,11 @@ def get_device(device_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_device(data: DeviceCreate, db: Session = Depends(get_db)):
+def create_device(
+    data: DeviceCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     location = db.query(Location).filter(Location.id == data.location_id).first()
 
     if not location:
@@ -120,6 +127,26 @@ def create_device(data: DeviceCreate, db: Session = Depends(get_db)):
     )
 
     db.add(device)
+    db.flush()
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="DEVICE_CREATED",
+        entity_type="device",
+        entity_id=device.id,
+        description=f"Kreiran uređaj {device.name}",
+        old_data=None,
+        new_data={
+            "id": device.id,
+            "location_id": device.location_id,
+            "name": device.name,
+            "device_type": device.device_type,
+            "serial_number": device.serial_number,
+            "active": device.active,
+        },
+    )
+
     db.commit()
     db.refresh(device)
 
@@ -127,7 +154,12 @@ def create_device(data: DeviceCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{device_id}")
-def update_device(device_id: int, data: DeviceUpdate, db: Session = Depends(get_db)):
+def update_device(
+    device_id: int,
+    data: DeviceUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     device = db.query(Device).filter(Device.id == device_id).first()
 
     if not device:
@@ -138,24 +170,76 @@ def update_device(device_id: int, data: DeviceUpdate, db: Session = Depends(get_
     if not location:
         raise HTTPException(status_code=404, detail="Lokacija nije pronađena")
 
+    old_data = {
+        "id": device.id,
+        "location_id": device.location_id,
+        "name": device.name,
+        "device_type": device.device_type,
+        "serial_number": device.serial_number,
+        "active": device.active,
+    }
+
     device.location_id = data.location_id
     device.name = data.name
     device.device_type = data.device_type
     device.serial_number = data.serial_number
     device.active = data.active
 
+    new_data = {
+        "id": device.id,
+        "location_id": device.location_id,
+        "name": device.name,
+        "device_type": device.device_type,
+        "serial_number": device.serial_number,
+        "active": device.active,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="DEVICE_UPDATED",
+        entity_type="device",
+        entity_id=device.id,
+        description=f"Ažuriran uređaj {device.name}",
+        old_data=old_data,
+        new_data=new_data,
+    )
+
     db.commit()
     db.refresh(device)
 
     return device
 
-
 @router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_device(device_id: int, db: Session = Depends(get_db)):
+def delete_device(
+    device_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     device = db.query(Device).filter(Device.id == device_id).first()
 
     if not device:
         raise HTTPException(status_code=404, detail="Uređaj nije pronađen")
+
+    old_data = {
+        "id": device.id,
+        "location_id": device.location_id,
+        "name": device.name,
+        "device_type": device.device_type,
+        "serial_number": device.serial_number,
+        "active": device.active,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="DEVICE_DELETED",
+        entity_type="device",
+        entity_id=device.id,
+        description=f"Obrisan uređaj {device.name}",
+        old_data=old_data,
+        new_data=None,
+    )
 
     db.delete(device)
     db.commit()

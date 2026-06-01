@@ -13,6 +13,10 @@ from app.models import (
 from app.models import Region, Entity
 from app.schemas.number_range import NumberRangeCreate, NumberRangeUpdate
 from app.api.deps import get_current_user
+
+from app.utils.activity_logger import log_activity
+
+
 router = APIRouter(prefix="/number-ranges", tags=["Number Ranges"],dependencies=[Depends(get_current_user)])
 
 
@@ -168,7 +172,11 @@ def get_number_range(range_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_number_range(data: NumberRangeCreate, db: Session = Depends(get_db)):
+def create_number_range(
+    data: NumberRangeCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     rak_block = db.query(RakNumberBlock).filter(RakNumberBlock.id == data.rak_block_id).first()
     if not rak_block:
         raise HTTPException(status_code=404, detail="RAK blok nije pronađen")
@@ -195,17 +203,40 @@ def create_number_range(data: NumberRangeCreate, db: Session = Depends(get_db)):
     )
 
     db.add(number_range)
+    db.flush()
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="NUMBER_RANGE_CREATED",
+        entity_type="number_range",
+        entity_id=number_range.id,
+        description=f"Kreiran interni raspon {number_range.range_start} - {number_range.range_end}",
+        old_data=None,
+        new_data={
+            "id": number_range.id,
+            "rak_block_id": number_range.rak_block_id,
+            "location_id": number_range.location_id,
+            "device_id": number_range.device_id,
+            "name": number_range.name,
+            "range_start": number_range.range_start,
+            "range_end": number_range.range_end,
+            "range_size": number_range.range_size,
+            "generated": number_range.generated,
+        },
+    )
+
     db.commit()
     db.refresh(number_range)
 
     return number_range
-
 
 @router.put("/{range_id}")
 def update_number_range(
     range_id: int,
     data: NumberRangeUpdate,
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     number_range = db.query(NumberRange).filter(NumberRange.id == range_id).first()
 
@@ -232,6 +263,18 @@ def update_number_range(
     check_internal_overlap(db, data.range_start, data.range_end, exclude_id=range_id)
     validate_device_location(db, data.device_id, data.location_id)
 
+    old_data = {
+        "id": number_range.id,
+        "rak_block_id": number_range.rak_block_id,
+        "location_id": number_range.location_id,
+        "device_id": number_range.device_id,
+        "name": number_range.name,
+        "range_start": number_range.range_start,
+        "range_end": number_range.range_end,
+        "range_size": number_range.range_size,
+        "generated": number_range.generated,
+    }
+
     number_range.rak_block_id = data.rak_block_id
     number_range.location_id = data.location_id
     number_range.device_id = data.device_id
@@ -240,14 +283,40 @@ def update_number_range(
     number_range.range_end = data.range_end
     number_range.range_size = calculate_range_size(data.range_start, data.range_end)
 
+    new_data = {
+        "id": number_range.id,
+        "rak_block_id": number_range.rak_block_id,
+        "location_id": number_range.location_id,
+        "device_id": number_range.device_id,
+        "name": number_range.name,
+        "range_start": number_range.range_start,
+        "range_end": number_range.range_end,
+        "range_size": number_range.range_size,
+        "generated": number_range.generated,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="NUMBER_RANGE_UPDATED",
+        entity_type="number_range",
+        entity_id=number_range.id,
+        description=f"Ažuriran interni raspon {number_range.range_start} - {number_range.range_end}",
+        old_data=old_data,
+        new_data=new_data,
+    )
+
     db.commit()
     db.refresh(number_range)
 
     return number_range
 
-
 @router.delete("/{range_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_number_range(range_id: int, db: Session = Depends(get_db)):
+def delete_number_range(
+    range_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
     number_range = db.query(NumberRange).filter(NumberRange.id == range_id).first()
 
     if not number_range:
@@ -258,6 +327,29 @@ def delete_number_range(range_id: int, db: Session = Depends(get_db)):
             status_code=400,
             detail="Raspon koji je već generiran ne može se obrisati",
         )
+
+    old_data = {
+        "id": number_range.id,
+        "rak_block_id": number_range.rak_block_id,
+        "location_id": number_range.location_id,
+        "device_id": number_range.device_id,
+        "name": number_range.name,
+        "range_start": number_range.range_start,
+        "range_end": number_range.range_end,
+        "range_size": number_range.range_size,
+        "generated": number_range.generated,
+    }
+
+    log_activity(
+        db=db,
+        user=current_user,
+        action="NUMBER_RANGE_DELETED",
+        entity_type="number_range",
+        entity_id=number_range.id,
+        description=f"Obrisan interni raspon {number_range.range_start} - {number_range.range_end}",
+        old_data=old_data,
+        new_data=None,
+    )
 
     db.delete(number_range)
     db.commit()
