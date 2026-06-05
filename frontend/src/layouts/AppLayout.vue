@@ -49,13 +49,13 @@
         <div class="user-row">
           <div class="avatar">
             {{
-              (authStore.user?.username || authStore.user?.email || "A")
+              (authStore.user?.full_name || authStore.user?.email || "-")
                 .charAt(0)
                 .toUpperCase()
             }}
           </div>
           <div class="user-info">
-            <p>{{ authStore.user?.full_name || authStore.user?.email || "Korisnik" }}</p>
+            <p>{{ authStore.user?.full_name || authStore.user?.email || "-" }}</p>
             <span>{{ authStore.user?.role ?? "—" }}</span>
           </div>
         </div>
